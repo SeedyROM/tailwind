@@ -31,6 +31,7 @@ high_cut_freq= hslider("[10] High Cut (Hz)", 12000, 1000, 20000, 100) : si.smoo;
 freeze_amt   = hslider("[11] Freeze", 1.0, 0.6, 1.0, 0.01);
 freeze_on    = checkbox("[12] Freeze On");
 freeze       = freeze_amt * freeze_on : si.smoo;
+saturation   = hslider("[13] Saturation", 0.125, 0.0, 0.25, 0.01) : si.smoo;
 
 // ============================================================================
 // UTILITIES
@@ -150,43 +151,57 @@ with {
 };
 
 // FDN tank: stereo in → stereo out
+// Injection and tap gains: 1/sqrt(N/2) = 1/sqrt(4) = 0.5 for energy-matched
+// half-injection (L into even channels, R into odd channels).
+fdn_inject = 0.5;
+fdn_tap = 0.20;
+
 fdn_tank(inL, inR) = (fdn_body(inL, inR) ~ si.bus(8)) : par(i, 8, !), _, _
 with {
     fdn_body(iL, iR, fb0,fb1,fb2,fb3,fb4,fb5,fb6,fb7) =
-        fb0 + iL*in_gain*0.25,
-        fb1 + iR*in_gain*0.25,
-        fb2 + iL*in_gain*0.25,
-        fb3 + iR*in_gain*0.25,
-        fb4 + iL*in_gain*0.25,
-        fb5 + iR*in_gain*0.25,
-        fb6 + iL*in_gain*0.25,
-        fb7 + iR*in_gain*0.25
+        fb0 + iL*in_gain*fdn_inject,
+        fb1 + iR*in_gain*fdn_inject,
+        fb2 + iL*in_gain*fdn_inject,
+        fb3 + iR*in_gain*fdn_inject,
+        fb4 + iL*in_gain*fdn_inject,
+        fb5 + iR*in_gain*fdn_inject,
+        fb6 + iL*in_gain*fdn_inject,
+        fb7 + iR*in_gain*fdn_inject
         // Hadamard mixing (unnormalized — compensation is in fdn_line)
         : ro.hadamard(8)
         // 8 parallel delay lines with damping
         : par(i, 8, fdn_line(i))
         // Duplicate: 8 for feedback + 2 stereo taps
         <: si.bus(8),
-           ((_, !, _, !, _, !, _, !) :> _) * 0.25,    // even lines → L
-           ((!, _, !, _, !, _, !, _) :> _) * 0.25     // odd lines  → R
+           ((_, !, _, !, _, !, _, !) :> _) * fdn_tap,    // even lines → L
+           ((!, _, !, _, !, _, !, _) :> _) * fdn_tap     // odd lines  → R
     ;
 };
 
 // ============================================================================
-// OUTPUT EQ
+// OUTPUT EQ + SATURATION
 // ============================================================================
 
 output_eq = fi.highpass(2, low_cut_freq) : fi.lowpass(2, high_cut_freq);
+
+// Normalized tanh soft clip: drive maps saturation 0..1 to 1..8.
+// At drive=1 (saturation=0): tanh(x)/tanh(1) ≈ linear, nearly clean.
+// At drive=8 (saturation=1): heavy soft clipping on peaks.
+// The /tanh(drive) normalization keeps quiet-signal gain at unity.
+output_saturate = _ * drive : ma.tanh : /(ma.tanh(drive))
+with {
+    drive = 1.0 + saturation * 7.0;
+};
 
 // ============================================================================
 // MAIN PROCESS
 // ============================================================================
 
-// Stereo in → split dry/wet → FDN reverb (shimmer in feedback) → EQ → mix → stereo out
+// Stereo in → split dry/wet → FDN → EQ → saturate → mix → stereo out
 process = _, _ <: wet_path, dry_path : interleave_mix
 with {
     wet_path = par(i, 2, predelay) : diffuser_L, diffuser_R
-             : fdn_tank : par(i, 2, output_eq);
+             : fdn_tank : par(i, 2, output_eq : output_saturate);
     dry_path = si.bus(2);
     interleave_mix(wL, wR, dL, dR) = xfade(mix, dL, wL), xfade(mix, dR, wR);
 };
