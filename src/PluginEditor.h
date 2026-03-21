@@ -14,7 +14,7 @@ public:
   void resized() override;
 
 private:
-  TailwindAudioProcessor &audioProcessor;
+  [[maybe_unused]] TailwindAudioProcessor &audioProcessor;
 
   // Components
   TopBar topBar;

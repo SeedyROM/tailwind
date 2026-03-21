@@ -46,6 +46,7 @@ struct TailwindDSPSIG0 {
 	}
 	
 	void instanceInitTailwindDSPSIG0(int sample_rate) {
+		(void)sample_rate;
 		for (int l27 = 0; l27 < 2; l27 = l27 + 1) {
 			iVec12[l27] = 0;
 		}
@@ -81,6 +82,7 @@ struct TailwindDSPSIG1 {
 	}
 	
 	void instanceInitTailwindDSPSIG1(int sample_rate) {
+		(void)sample_rate;
 		for (int l38 = 0; l38 < 2; l38 = l38 + 1) {
 			iVec15[l38] = 0;
 		}

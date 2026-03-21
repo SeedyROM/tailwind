@@ -105,11 +105,11 @@ def run_faust_cpp(
     print(f"  Running: {' '.join(cmd)}")
     subprocess.run(cmd, check=True)
 
-    # Post-process: inject FaustDefs.h include after the header guard
+    # Post-process the generated C++ source
     with open(output_path, "r") as f:
         content = f.read()
 
-    # Insert after the #define __ClassName_H__ line
+    # 1. Inject FaustDefs.h include after the header guard
     guard_pattern = f"#define  __{class_name}_H__"
     if guard_pattern in content:
         content = content.replace(
@@ -122,6 +122,14 @@ def run_faust_cpp(
             "#endif \n\n/* link with",
             '#include "FaustDefs.h"\n\n#endif \n\n/* link with',
         )
+
+    # 2. Silence -Wunused-parameter on Faust SIG helper methods.
+    #    These have `int sample_rate` parameters that Faust never reads.
+    content = re.sub(
+        r"(void instanceInit\w+SIG\d+\(int sample_rate\) \{)",
+        r"\1\n\t\t(void)sample_rate;",
+        content,
+    )
 
     with open(output_path, "w") as f:
         f.write(content)

@@ -11,8 +11,12 @@ gen_dir := "src/dsp/generated"
 default:
     @just --list
 
+# Run the Faust codegen (regenerates bridge files from .dsp)
+codegen:
+    python3 scripts/codegen.py {{dsp_source}} --output {{gen_dir}}
+
 # Configure the project with CMake + Ninja
-configure:
+configure: codegen
     cmake -B {{build_dir}} -G Ninja
 
 # Build the plugin (all formats)
@@ -29,10 +33,6 @@ clean:
 
 # Clean and rebuild from scratch
 rebuild: clean build
-
-# Run the Faust codegen manually (normally triggered by CMake)
-codegen:
-    python3 scripts/codegen.py {{dsp_source}} --output {{gen_dir}}
 
 # Initialize/update git submodules (VST2 SDK, etc.)
 submodules:
