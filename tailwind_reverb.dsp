@@ -28,7 +28,9 @@ mod_rate     = hslider("[07] Mod Rate (Hz)", 0.8, 0.1, 5.0, 0.01) : si.smoo;
 mod_depth    = hslider("[08] Mod Depth", 0.3, 0.0, 1.0, 0.01) : si.smoo;
 low_cut_freq = hslider("[09] Low Cut (Hz)", 80, 20, 500, 1) : si.smoo;
 high_cut_freq= hslider("[10] High Cut (Hz)", 12000, 1000, 20000, 100) : si.smoo;
-freeze       = checkbox("[11] Freeze") : si.smoo;
+freeze_amt   = hslider("[11] Freeze", 1.0, 0.6, 1.0, 0.01);
+freeze_on    = checkbox("[12] Freeze On");
+freeze       = freeze_amt * freeze_on : si.smoo;
 
 // ============================================================================
 // UTILITIES
