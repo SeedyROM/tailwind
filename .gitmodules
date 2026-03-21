@@ -1,0 +1,3 @@
+[submodule "external/vst-2.4-sdk"]
+	path = external/vst-2.4-sdk
+	url = https://github.com/sysfce2/vst-2.4-sdk.git

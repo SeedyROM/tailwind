@@ -1,0 +1,18 @@
+{
+  "configurations": [
+    {
+      "name": "Debug",
+      "includePath": [
+        "${workspaceFolder}/**",
+        "build/juce_binarydata_TailwindAssets"
+      ],
+      "defines": [
+        "JucePlugin_Name=\"Tailwind\"",
+        "JucePlugin_Manufacturer=\"SeedyROM\""
+      ],
+      "cppStandard": "c++17",
+      "configurationProvider": "ms-vscode.cmake-tools"
+    }
+  ],
+  "version": 4
+}

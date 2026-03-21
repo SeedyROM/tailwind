@@ -1,0 +1,51 @@
+# Build directories
+build/
+cmake-build-*/
+Build/
+Builds/
+
+# Generated files
+*.user
+*.autosave
+*.swp
+*~
+*.dsp.json
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+Testing/
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps
+
+# IDE
+.vscode/**/*
+!.vscode/c_cpp_properties.json
+.idea/
+*.code-workspace
+.DS_Store
+
+# Compiled binaries
+*.exe
+*.dll
+*.so
+*.dylib
+*.app
+*.vst
+*.vst3
+*.component
+*.aaxplugin
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# Local scripts config
+scripts/element_project.conf
