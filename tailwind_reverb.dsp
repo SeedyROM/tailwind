@@ -5,10 +5,10 @@
 //
 // Features:
 //   - 8x8 FDN reverb with Hadamard mixing matrix
-//   - Shimmer (octave up) and mutter (octave down) via granular pitch shift
 //   - LFO modulation on tank delay lines
 //   - Zita-Rev1-style frequency-dependent damping
-//   - Full parameter control (12 params)
+//   - Input diffusers, pre-delay, output EQ, freeze
+//   - Full parameter control (11 params)
 //
 // ============================================================================
 
@@ -26,11 +26,9 @@ hf_damp      = hslider("[05] Damping", 0.5, 0.0, 1.0, 0.01) : si.smoo;
 lf_damp      = hslider("[06] Low Damp", 0.2, 0.0, 1.0, 0.01) : si.smoo;
 mod_rate     = hslider("[07] Mod Rate (Hz)", 0.8, 0.1, 5.0, 0.01) : si.smoo;
 mod_depth    = hslider("[08] Mod Depth", 0.3, 0.0, 1.0, 0.01) : si.smoo;
-shimmer_pitch= hslider("[09] Shimmer Pitch", 0.0, -1.0, 1.0, 0.01) : si.smoo;
-shimmer_amt  = hslider("[10] Shimmer Amount", 0.0, 0.0, 1.0, 0.01) : si.smoo;
-low_cut_freq = hslider("[11] Low Cut (Hz)", 80, 20, 500, 1) : si.smoo;
-high_cut_freq= hslider("[12] High Cut (Hz)", 12000, 1000, 20000, 100) : si.smoo;
-freeze       = checkbox("[13] Freeze");
+low_cut_freq = hslider("[09] Low Cut (Hz)", 80, 20, 500, 1) : si.smoo;
+high_cut_freq= hslider("[10] High Cut (Hz)", 12000, 1000, 20000, 100) : si.smoo;
+freeze       = checkbox("[11] Freeze") : si.smoo;
 
 // ============================================================================
 // UTILITIES
@@ -45,8 +43,8 @@ xfade(m, dry, wet) = dry * cos(m * ma.PI/2) + wet * sin(m * ma.PI/2);
 // Soft saturation
 soft_clip = ma.tanh;
 
-// Freeze-aware input gain (zero input when frozen)
-in_gain = select2(freeze, 1.0, 0.0);
+// Freeze-aware input gain (crossfades to zero when frozen)
+in_gain = 1.0 - freeze;
 
 // ============================================================================
 // DAMPING FILTERS (Zita-Rev1 / Jot-style)
@@ -89,8 +87,8 @@ staynormal = 10.0^(-20);
 damping_filter(delay_samps) = gM * low_shelf1(g0 / max(1e-6, gM), lf_freq)
                             : special_lp(gM, hf_freq) : +(staynormal)
 with {
-    g0 = select2(freeze, line_gain_t60(delay_samps, max(0.01, t60_dc)), 1.0);
-    gM = select2(freeze, line_gain_t60(delay_samps, max(0.01, t60_mid)), 1.0);
+    g0 = line_gain_t60(delay_samps, max(0.01, t60_dc)) * (1.0 - freeze) + freeze;
+    gM = line_gain_t60(delay_samps, max(0.01, t60_mid)) * (1.0 - freeze) + freeze;
 };
 
 // ============================================================================
@@ -125,65 +123,13 @@ max_mod_exc = 48;
 lfo(freq, phase) = os.oscp(freq, phase) * 0.5 + 0.5 : *(max_mod_exc * mod_depth);
 
 // ============================================================================
-// SHIMMER / MUTTER — Granular Pitch Shifter
-// ============================================================================
-//
-// Two overlapping grains reading from a delay buffer. Each grain's read
-// pointer advances at (1 - ratio) samples/sample relative to real time.
-// For octave up (ratio=2): read pointer moves backward 1 sample/sample
-//   → delay decreases over the grain → pitch goes UP
-// For octave down (ratio=0.5): read pointer moves forward 0.5 sample/sample extra
-//   → delay increases over the grain → pitch goes DOWN
-//
-// The key: delay_offset = phase * (1.0 - ratio), NO abs().
-// Positive offset = read behind (pitch down), negative = read ahead (pitch up).
-// We handle the sign by biasing into the valid delay range.
-
-pitch_ratio = 2.0 ^ shimmer_pitch;  // -1→0.5, 0→1.0, +1→2.0
-grain_size = 2048;                   // ~42ms @ 48kHz
-grain_max_del = 8192;                // must fit the largest offset
-
-// Base delay to keep read pointer always positive.
-// Worst case offset: grain_size * |1 - ratio|. At ratio=2, offset = -2048.
-// We add a base delay so the read pointer is always > 0.
-grain_base_del = 4096;
-
-pitch_shifter(x) = g1 + g2
-with {
-    // Two ramp phasors offset by half a grain
-    ramp1 = +(1) ~ %(grain_size);
-    ramp2 = (ramp1 + grain_size/2) % grain_size;
-
-    // Hann window envelope per grain
-    hann(p) = sin(ma.PI * float(p) / float(grain_size)) ^ 2.0;
-
-    // Delay offset: how far from the base delay the read pointer is.
-    // Positive = further behind (pitch down), negative = closer (pitch up).
-    // For ratio=2 (octave up): (1-2) = -1, so offset sweeps from 0 to -grain_size
-    //   → total delay decreases → reading "faster" → pitch UP ✓
-    // For ratio=0.5 (octave down): (1-0.5) = 0.5, offset sweeps 0 to +grain_size/2
-    //   → total delay increases → reading "slower" → pitch DOWN ✓
-    del(p) = grain_base_del + float(p) * (1.0 - pitch_ratio)
-           : max(1) : min(grain_max_del - 1);
-
-    g1 = de.fdelay(grain_max_del, del(ramp1), x) * hann(ramp1);
-    g2 = de.fdelay(grain_max_del, del(ramp2), x) * hann(ramp2);
-};
-
-// Shimmer blend: dry/wet mix of original and pitch-shifted signal
-shimmer_process = _ <: *(1.0 - shimmer_amt), (pitch_shifter : *(shimmer_amt)) :> _;
-
-// ============================================================================
 // FDN TANK — 8x8 Feedback Delay Network
 // ============================================================================
 //
 // Signal flow:
-//   Stereo input → shimmer → inject into 8 channels
-//   → [add feedback] → Hadamard(8) → 8 delay lines → damping → feedback
-//                                                              → stereo taps
-//
-// Shimmer is BEFORE the tank so the FDN reverberates the pitch-shifted signal.
-// This creates the classic BigSky shimmer buildup effect.
+//   Stereo input → split dry/wet
+//     dry: → crossfade mix
+//     wet: → predelay → diffusers → FDN tank (shimmer in feedback) → output EQ → crossfade mix
 
 // Delay lengths (mutually prime, ~30-58ms @ 48kHz)
 fdn_dt(0) = 1423; fdn_dt(1) = 1637; fdn_dt(2) = 1811; fdn_dt(3) = 2003;
@@ -202,14 +148,8 @@ with {
 };
 
 // FDN tank: stereo in → stereo out
-// Shimmer is applied to the input BEFORE entering the tank.
-fdn_tank(inL, inR) = (fdn_body(shimL, shimR) ~ si.bus(8)) : par(i, 8, !), _, _
+fdn_tank(inL, inR) = (fdn_body(inL, inR) ~ si.bus(8)) : par(i, 8, !), _, _
 with {
-    // Apply shimmer to input — the FDN then reverberates the shifted signal,
-    // building up the classic octave-up/down shimmer effect over time
-    shimL = inL : shimmer_process;
-    shimR = inR : shimmer_process;
-
     fdn_body(iL, iR, fb0,fb1,fb2,fb3,fb4,fb5,fb6,fb7) =
         fb0 + iL*in_gain*0.25,
         fb1 + iR*in_gain*0.25,
@@ -240,7 +180,7 @@ output_eq = fi.highpass(2, low_cut_freq) : fi.lowpass(2, high_cut_freq);
 // MAIN PROCESS
 // ============================================================================
 
-// Stereo in → split dry/wet → FDN reverb → EQ → mix → stereo out
+// Stereo in → split dry/wet → FDN reverb (shimmer in feedback) → EQ → mix → stereo out
 process = _, _ <: wet_path, dry_path : interleave_mix
 with {
     wet_path = par(i, 2, predelay) : diffuser_L, diffuser_R
