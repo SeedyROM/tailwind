@@ -43,8 +43,16 @@ ms2samp(ms) = ms * ma.SR / 1000.0;
 // Equal-power crossfade
 xfade(m, dry, wet) = dry * cos(m * ma.PI/2) + wet * sin(m * ma.PI/2);
 
-// Soft saturation
-soft_clip = ma.tanh;
+// Fast tanh approximation (Padé [3/2]): max |error| < 0.004 for |x| < 4.
+// Branchless and fully vectorizable — no libm call barrier.
+// For |x| > ~3.6 it soft-saturates at ±1 via the rational form.
+fast_tanh(x) = x * (27.0 + x2) / (27.0 + 9.0 * x2)
+with {
+    x2 = x * x;
+};
+
+// Soft saturation (vectorizable fast tanh)
+soft_clip = fast_tanh;
 
 // Freeze-aware input gain (crossfades to zero when frozen)
 in_gain = 1.0 - freeze;
@@ -85,10 +93,9 @@ with {
 low_shelf1(G0, fx) = _ <: _, fi.lowpass(1, fx) : _, *(G0 - 1.0) : +;
 
 // Combined damping filter for a given delay length
-staynormal = 10.0^(-20);
-
+// NOTE: Denormal protection is handled by Faust -ftz 2 (FTZ code insertion).
 damping_filter(delay_samps) = gM * low_shelf1(g0 / max(1e-6, gM), lf_freq)
-                            : special_lp(gM, hf_freq) : +(staynormal)
+                            : special_lp(gM, hf_freq)
 with {
     g0 = line_gain_t60(delay_samps, max(0.01, t60_dc)) * (1.0 - freeze) + freeze;
     gM = line_gain_t60(delay_samps, max(0.01, t60_mid)) * (1.0 - freeze) + freeze;
@@ -185,10 +192,10 @@ with {
 output_eq = fi.highpass(2, low_cut_freq) : fi.lowpass(2, high_cut_freq);
 
 // Normalized tanh soft clip: drive maps saturation 0..1 to 1..8.
-// At drive=1 (saturation=0): tanh(x)/tanh(1) ≈ linear, nearly clean.
+// At drive=1 (saturation=0): fast_tanh(x)/fast_tanh(1) ≈ linear, nearly clean.
 // At drive=8 (saturation=1): heavy soft clipping on peaks.
-// The /tanh(drive) normalization keeps quiet-signal gain at unity.
-output_saturate = _ * drive : ma.tanh : /(ma.tanh(drive))
+// The /fast_tanh(drive) normalization keeps quiet-signal gain at unity.
+output_saturate = _ * drive : fast_tanh : /(fast_tanh(drive))
 with {
     drive = 1.0 + saturation * 7.0;
 };

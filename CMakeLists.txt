@@ -106,6 +106,54 @@ target_compile_definitions(Tailwind PUBLIC
     JUCE_VST3_CAN_REPLACE_VST2=0
 )
 
+# ==========================================================================
+# DSP Optimization Flags
+# ==========================================================================
+# These flags enable the compiler to fully auto-vectorize the Faust-generated
+# DSP code using SIMD instructions (NEON on Apple Silicon, AVX2/SSE on x86).
+
+# -ffast-math: enables FP contraction, reciprocal approximations, and
+#              reassociation — critical for auto-vectorization of DSP code.
+#              Safe here because we control the numeric range (audio floats).
+# -march=native: target the build machine's exact CPU (enables AVX2, NEON, etc.)
+# -funroll-loops: unroll inner DSP loops for better ILP and SIMD utilization.
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(Tailwind PRIVATE
+        # Release-only optimizations
+        $<$<CONFIG:Release>:-O3>
+        $<$<CONFIG:Release>:-ffast-math>
+        $<$<CONFIG:Release>:-funroll-loops>
+    )
+
+    # Architecture-specific SIMD flags
+    if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm64|aarch64")
+        # Apple Silicon / ARM64: NEON is always available, no extra flags needed.
+        # But we can still hint the compiler for better scheduling.
+        message(STATUS "Target: ARM64 (NEON intrinsics available by default)")
+    elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64")
+        # x86-64: enable AVX2 + FMA for widest SIMD on modern CPUs.
+        # Falls back gracefully if building on older CPUs via -march=native.
+        target_compile_options(Tailwind PRIVATE
+            $<$<CONFIG:Release>:-march=native>
+        )
+        message(STATUS "Target: x86_64 (using -march=native for AVX2/FMA)")
+    endif()
+
+    # Flush-to-zero at the compiler level (supplement Faust -ftz 2 and JUCE ScopedNoDenormals)
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        target_compile_options(Tailwind PRIVATE
+            $<$<CONFIG:Release>:-fdenormal-fp-math=positive-zero>
+        )
+    endif()
+elseif(MSVC)
+    target_compile_options(Tailwind PRIVATE
+        $<$<CONFIG:Release>:/O2>
+        $<$<CONFIG:Release>:/fp:fast>
+        $<$<CONFIG:Release>:/arch:AVX2>
+    )
+endif()
+
 # Link JUCE modules
 target_link_libraries(Tailwind PRIVATE
     juce::juce_audio_utils

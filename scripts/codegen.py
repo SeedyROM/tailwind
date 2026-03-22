@@ -86,6 +86,17 @@ def run_faust_cpp(
 
     Uses -scn "" to remove the dsp base class dependency, making the output
     self-contained (no Faust SDK headers needed to build).
+
+    Optimization flags:
+      -vec       : enable auto-vectorization (inner loops use vector size)
+      -vs 32     : vector size = 32 samples (good balance for NEON/AVX2)
+      -lv 1      : loop variant 1 (simple vector loop, best for compiler auto-vec)
+      -ftz 0     : flush-to-zero OFF in generated code (handled by JUCE
+                   ScopedNoDenormals + compiler -fdenormal-fp-math flag instead;
+                   -ftz 2 has a known Clang rvalue-address bug with -vec)
+      -mcd 0     : disable max copy delay optimization (better for vectorized code)
+      -single    : single precision (float)
+
     Post-processes the output to inject #include "FaustDefs.h" so UI/Meta stubs
     are available.
     """
@@ -98,6 +109,16 @@ def run_faust_cpp(
         class_name,
         "-scn",
         "",
+        "-vec",
+        "-vs",
+        "32",
+        "-lv",
+        "1",
+        "-ftz",
+        "0",
+        "-mcd",
+        "0",
+        "-single",
         "-o",
         output_path,
         dsp_path,
