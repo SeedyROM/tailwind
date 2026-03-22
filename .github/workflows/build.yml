@@ -69,7 +69,7 @@ jobs:
             libglu1-mesa-dev \
             mesa-common-dev \
             libcurl4-openssl-dev \
-            libwebkit2gtk-4.0-dev
+            libwebkit2gtk-4.1-dev
 
       - name: Configure (Unix)
         if: runner.os != 'Windows'
@@ -78,6 +78,7 @@ jobs:
             -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
             -DTAILWIND_COPY_AFTER_BUILD=OFF \
             -DTAILWIND_USE_MARCH_NATIVE=OFF \
+            -DTAILWIND_ENABLE_CODEGEN=OFF \
             ${{ matrix.cmake_args }}
 
       - name: Configure (Windows)
@@ -87,6 +88,7 @@ jobs:
             -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} `
             -DTAILWIND_COPY_AFTER_BUILD=OFF `
             -DTAILWIND_USE_MARCH_NATIVE=OFF `
+            -DTAILWIND_ENABLE_CODEGEN=OFF `
             ${{ matrix.cmake_args }}
 
       - name: Build

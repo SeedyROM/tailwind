@@ -14,6 +14,7 @@ set(VST2_SDK_PATH "${CMAKE_CURRENT_SOURCE_DIR}/external/vst-2.4-sdk/vstsdk2.4" C
 # CI-friendly options
 option(TAILWIND_COPY_AFTER_BUILD "Copy plugin to system dirs after build" ON)
 option(TAILWIND_USE_MARCH_NATIVE "Use -march=native (disable for distributable builds)" ON)
+option(TAILWIND_ENABLE_CODEGEN "Run Faust codegen (requires faust on PATH)" ON)
 set(TAILWIND_FORMATS "VST VST3 AU Standalone" CACHE STRING "Plugin formats to build")
 
 if(EXISTS "${VST2_SDK_PATH}/pluginterfaces/vst2.x/aeffect.h")
@@ -41,29 +42,41 @@ endif()
 # ==========================================================================
 # Regenerates the Faust C++ DSP and JUCE parameter bridge when the .dsp changes.
 # The generated files are committed to git, so Faust is only needed when
-# modifying the DSP source.
+# modifying the DSP source. Disable with -DTAILWIND_ENABLE_CODEGEN=OFF for CI.
 
-set(FAUST_DSP "${CMAKE_SOURCE_DIR}/dsp/tailwind_reverb.dsp")
 set(FAUST_GEN_DIR "${CMAKE_SOURCE_DIR}/src/dsp/generated")
-set(FAUST_CODEGEN "${CMAKE_SOURCE_DIR}/scripts/codegen.py")
 
-set(FAUST_GENERATED_FILES
-    ${FAUST_GEN_DIR}/FaustDefs.h
-    ${FAUST_GEN_DIR}/FaustDSP.h
-    ${FAUST_GEN_DIR}/FaustParams.h
-    ${FAUST_GEN_DIR}/FaustBridge.h
-)
+if(TAILWIND_ENABLE_CODEGEN)
+    find_program(FAUST_EXECUTABLE faust)
+    if(FAUST_EXECUTABLE)
+        message(STATUS "Faust found: ${FAUST_EXECUTABLE} — codegen enabled")
 
-add_custom_command(
-    OUTPUT ${FAUST_GENERATED_FILES}
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${FAUST_GEN_DIR}
-    COMMAND python3 ${FAUST_CODEGEN} ${FAUST_DSP} --output ${FAUST_GEN_DIR}
-    DEPENDS ${FAUST_DSP} ${FAUST_CODEGEN}
-    COMMENT "Generating Faust DSP and parameter bridge from tailwind_reverb.dsp..."
-    VERBATIM
-)
+        set(FAUST_DSP "${CMAKE_SOURCE_DIR}/dsp/tailwind_reverb.dsp")
+        set(FAUST_CODEGEN "${CMAKE_SOURCE_DIR}/scripts/codegen.py")
 
-add_custom_target(faust_codegen DEPENDS ${FAUST_GENERATED_FILES})
+        set(FAUST_GENERATED_FILES
+            ${FAUST_GEN_DIR}/FaustDefs.h
+            ${FAUST_GEN_DIR}/FaustDSP.h
+            ${FAUST_GEN_DIR}/FaustParams.h
+            ${FAUST_GEN_DIR}/FaustBridge.h
+        )
+
+        add_custom_command(
+            OUTPUT ${FAUST_GENERATED_FILES}
+            COMMAND ${CMAKE_COMMAND} -E make_directory ${FAUST_GEN_DIR}
+            COMMAND python3 ${FAUST_CODEGEN} ${FAUST_DSP} --output ${FAUST_GEN_DIR}
+            DEPENDS ${FAUST_DSP} ${FAUST_CODEGEN}
+            COMMENT "Generating Faust DSP and parameter bridge from tailwind_reverb.dsp..."
+            VERBATIM
+        )
+
+        add_custom_target(faust_codegen DEPENDS ${FAUST_GENERATED_FILES})
+    else()
+        message(STATUS "Faust not found — codegen disabled, using committed generated files")
+    endif()
+else()
+    message(STATUS "Faust codegen disabled (TAILWIND_ENABLE_CODEGEN=OFF)")
+endif()
 
 # ==========================================================================
 # Plugin Target
@@ -87,8 +100,10 @@ juce_add_plugin(Tailwind
     PRODUCT_NAME "Tailwind"
 )
 
-# Ensure codegen runs before compiling plugin sources
-add_dependencies(Tailwind faust_codegen)
+# Ensure codegen runs before compiling plugin sources (only if target exists)
+if(TARGET faust_codegen)
+    add_dependencies(Tailwind faust_codegen)
+endif()
 
 # Add binary resources (fonts, images, etc)
 juce_add_binary_data(TailwindAssets SOURCES
