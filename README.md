@@ -1,82 +1,41 @@
 # Tailwind
 
-BigSky-inspired Long Tail Reverb
+BigSky-inspired long tail reverb plugin.
 
-## About
+[![Build](https://github.com/SeedyROM/tailwind/actions/workflows/build.yml/badge.svg)](https://github.com/SeedyROM/tailwind/actions/workflows/build.yml)
 
-- **Author**: Zack Kollar (rallokkcaz@gmail.com)
-- **Company**: SeedyROM
-- **Formats**: VST2, VST3, AU, Standalone
+Tailwind is a stereo algorithmic reverb built around an 8x8 Feedback Delay Network with Hadamard mixing, Zita-Rev1-style frequency-dependent damping, LFO-modulated tank delay lines, input diffusers, and a freeze mode. The DSP is written in [Faust](https://faust.grame.fr/) and the UI is built with [JUCE](https://juce.com/).
+
+## Platforms & Formats
+
+| Platform | Architectures | Formats |
+|---|---|---|
+| macOS | Universal (arm64 + x86_64) | VST3, AU, Standalone |
+| macOS Legacy | x86_64 (10.13+) | VST3, AU, Standalone |
+| Windows | x86_64 | VST3, Standalone |
+| Linux | x86_64 | VST3, Standalone |
+
+## Downloads
+
+Grab the latest build from [GitHub Releases](https://github.com/SeedyROM/tailwind/releases). CI builds run on every push to `main` and pull request. When a `v*` tag is pushed, a draft release is created automatically with per-platform zips (macOS Universal, macOS Legacy, Windows, Linux).
 
 ## Building
 
-This project uses CMake and fetches JUCE automatically.
-
-### Prerequisites
-
-- CMake 3.22 or higher
-- C++17 compatible compiler
-- macOS: Xcode Command Line Tools
-- Windows: Visual Studio 2019 or later
-- Linux: GCC or Clang
-
-### VST2 Setup
-
-To build VST2 plugins, add and initialize the VST2 SDK submodule:
+Requires CMake 3.22+ and a C++17 compiler. JUCE is fetched automatically during configure.
 
 ```bash
-git submodule add https://github.com/sysfce2/vst-2.4-sdk.git external/vst-2.4-sdk
-git submodule update --init --recursive
-```
-
-### Build Steps
-
-```bash
-# Configure
-cmake -B build
-
-# Build
+cmake -B build -G Ninja
 cmake --build build --config Release
 ```
 
-### Development Build Script
+See [docs/building.md](docs/building.md) for platform-specific prerequisites, CMake options, and the `just` task runner.
 
-For rapid iteration with Element.app DAW:
+## Faust DSP
 
-```bash
-# Optional: Configure Element project path
-cp scripts/element_project.conf.example scripts/element_project.conf
-# Edit scripts/element_project.conf with your .els project path
+The reverb DSP lives in `dsp/tailwind_reverb.dsp`. A codegen script compiles the Faust source to C++ and generates a bridge layer that maps Faust parameters to JUCE's `AudioProcessorValueTreeState`. The generated files are committed to git, so you don't need Faust installed to build the plugin.
 
-# Build and reload in Element
-./scripts/element_dev.sh
-```
-
-## Project Structure
-
-```
-tailwind/
-├── CMakeLists.txt              # Build configuration
-├── src/
-│   ├── PluginProcessor.h/cpp   # Audio processing
-│   ├── PluginEditor.h/cpp      # UI editor
-│   ├── components/
-│   │   ├── brand/
-│   │   │   └── TopBar.h/cpp    # Top bar with logo
-│   │   ├── controls/           # UI controls (knobs, sliders, etc.)
-│   │   └── graphs/             # Visualizations (waveforms, spectrums)
-│   ├── data/                   # Data models and state
-│   ├── dsp/                    # DSP processing (filters, effects)
-│   └── utils/                  # Utilities and helpers
-├── assets/
-│   └── images/
-│       └── logo.png            # Company logo
-├── scripts/
-│   └── element_dev.sh          # Build & reload script
-└── external/                   # Git submodules
-    └── vst-2.4-sdk/            # VST2 SDK
-```
+See [docs/faust-codegen.md](docs/faust-codegen.md) for details on the codegen pipeline and how to modify the DSP.
 
 ## License
 
-[Your License Here]
+[AGPLv3](LICENSE)
