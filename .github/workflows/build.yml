@@ -4,8 +4,20 @@ on:
   push:
     branches: [main, master]
     tags: ["v*"]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "LICENSE"
+      - ".gitignore"
+      - ".vscode/**"
   pull_request:
     branches: [main, master]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "LICENSE"
+      - ".gitignore"
+      - ".vscode/**"
 
 env:
   BUILD_TYPE: Release
