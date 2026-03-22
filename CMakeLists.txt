@@ -11,6 +11,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # VST2 SDK Path - must be set BEFORE fetching JUCE
 set(VST2_SDK_PATH "${CMAKE_CURRENT_SOURCE_DIR}/external/vst-2.4-sdk/vstsdk2.4" CACHE PATH "Path to VST2 SDK")
 
+# CI-friendly options
+option(TAILWIND_COPY_AFTER_BUILD "Copy plugin to system dirs after build" ON)
+option(TAILWIND_USE_MARCH_NATIVE "Use -march=native (disable for distributable builds)" ON)
+set(TAILWIND_FORMATS "VST VST3 AU Standalone" CACHE STRING "Plugin formats to build")
+
 if(EXISTS "${VST2_SDK_PATH}/pluginterfaces/vst2.x/aeffect.h")
     message(STATUS "VST2 SDK found at: ${VST2_SDK_PATH}")
 else()
@@ -64,6 +69,9 @@ add_custom_target(faust_codegen DEPENDS ${FAUST_GENERATED_FILES})
 # Plugin Target
 # ==========================================================================
 
+# Convert TAILWIND_FORMATS string to a list for juce_add_plugin
+separate_arguments(TAILWIND_FORMATS_LIST UNIX_COMMAND "${TAILWIND_FORMATS}")
+
 # Define the plugin
 juce_add_plugin(Tailwind
     COMPANY_NAME "SeedyROM"
@@ -72,10 +80,10 @@ juce_add_plugin(Tailwind
     NEEDS_MIDI_OUTPUT FALSE
     IS_MIDI_EFFECT FALSE
     EDITOR_WANTS_KEYBOARD_FOCUS FALSE
-    COPY_PLUGIN_AFTER_BUILD TRUE
+    COPY_PLUGIN_AFTER_BUILD ${TAILWIND_COPY_AFTER_BUILD}
     PLUGIN_MANUFACTURER_CODE Seed
     PLUGIN_CODE Tail
-    FORMATS VST VST3 AU Standalone
+    FORMATS ${TAILWIND_FORMATS_LIST}
     PRODUCT_NAME "Tailwind"
 )
 
@@ -136,12 +144,19 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
         # But we can still hint the compiler for better scheduling.
         message(STATUS "Target: ARM64 (NEON intrinsics available by default)")
     elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64")
-        # x86-64: enable AVX2 + FMA for widest SIMD on modern CPUs.
-        # Falls back gracefully if building on older CPUs via -march=native.
-        target_compile_options(Tailwind PRIVATE
-            $<$<CONFIG:Release>:-march=native>
-        )
-        message(STATUS "Target: x86_64 (using -march=native for AVX2/FMA)")
+        if(TAILWIND_USE_MARCH_NATIVE)
+            # Local dev builds: target exact CPU for max performance
+            target_compile_options(Tailwind PRIVATE
+                $<$<CONFIG:Release>:-march=native>
+            )
+            message(STATUS "Target: x86_64 (using -march=native for AVX2/FMA)")
+        else()
+            # CI / distributable builds: SSE4.2 baseline for broad compatibility
+            target_compile_options(Tailwind PRIVATE
+                $<$<CONFIG:Release>:-msse4.2>
+            )
+            message(STATUS "Target: x86_64 (using SSE4.2 baseline for distribution)")
+        endif()
     endif()
 
     # Flush-to-zero at the compiler level (supplement Faust -ftz 2 and JUCE ScopedNoDenormals)
@@ -154,8 +169,16 @@ elseif(MSVC)
     target_compile_options(Tailwind PRIVATE
         $<$<CONFIG:Release>:/O2>
         $<$<CONFIG:Release>:/fp:fast>
-        $<$<CONFIG:Release>:/arch:AVX2>
     )
+    if(TAILWIND_USE_MARCH_NATIVE)
+        target_compile_options(Tailwind PRIVATE
+            $<$<CONFIG:Release>:/arch:AVX2>
+        )
+        message(STATUS "Target: MSVC x86_64 (AVX2)")
+    else()
+        # SSE2 is the default for MSVC x64, no flag needed for SSE4.2 baseline
+        message(STATUS "Target: MSVC x86_64 (SSE2 baseline for distribution)")
+    endif()
 endif()
 
 # Link JUCE modules
