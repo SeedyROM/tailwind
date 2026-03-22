@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ui/TailwindColors.h"
 #include <juce_gui_basics/juce_gui_basics.h>
 
 class TopBar : public juce::Component {

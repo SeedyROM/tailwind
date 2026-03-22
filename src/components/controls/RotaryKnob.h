@@ -1,0 +1,33 @@
+#pragma once
+
+#include "ui/TailwindColors.h"
+#include <juce_audio_processors/juce_audio_processors.h>
+#include <juce_gui_basics/juce_gui_basics.h>
+
+/**
+ * Self-contained rotary knob component with:
+ * - Label above
+ * - Custom-painted rotary knob (via LookAndFeel)
+ * - Value readout below
+ *
+ * Attaches to an APVTS parameter automatically.
+ */
+class RotaryKnob : public juce::Component {
+public:
+  RotaryKnob(juce::AudioProcessorValueTreeState &apvts,
+             const juce::String &paramID, const juce::String &labelText,
+             const juce::String &suffix = "", bool showAsPercentage = false);
+  ~RotaryKnob() override = default;
+
+  void resized() override;
+
+  juce::Slider &getSlider() { return slider; }
+
+private:
+  juce::Slider slider;
+  juce::Label label;
+  std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>
+      attachment;
+
+  JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(RotaryKnob)
+};

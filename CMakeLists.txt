@@ -92,11 +92,15 @@ target_sources(Tailwind PRIVATE
     src/PluginProcessor.cpp
     src/PluginEditor.cpp
     src/components/brand/TopBar.cpp
+    src/components/controls/RotaryKnob.cpp
+    src/components/controls/FreezeButton.cpp
+    src/ui/TailwindLookAndFeel.cpp
 )
 
-# Include path for generated Faust headers
+# Include paths for generated Faust headers and UI sources
 target_include_directories(Tailwind PRIVATE
     ${FAUST_GEN_DIR}
+    ${CMAKE_SOURCE_DIR}/src
 )
 
 # Set compile definitions

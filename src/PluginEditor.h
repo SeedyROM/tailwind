@@ -2,6 +2,9 @@
 
 #include "PluginProcessor.h"
 #include "components/brand/TopBar.h"
+#include "components/controls/FreezeButton.h"
+#include "components/controls/RotaryKnob.h"
+#include "ui/TailwindLookAndFeel.h"
 
 #include <juce_audio_processors/juce_audio_processors.h>
 
@@ -14,42 +17,36 @@ public:
   void resized() override;
 
 private:
-  TailwindAudioProcessor &audioProcessor;
+  // Custom look and feel
+  TailwindLookAndFeel tailwindLnf;
 
   // Components
   TopBar topBar;
 
-  // ---------------------------------------------------------------------------
-  // Parameter controls — one slider per float param, one button for the toggle
-  // ---------------------------------------------------------------------------
-  struct ParamSlider {
-    juce::Slider slider;
-    juce::Label label;
-    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>
-        attachment;
-  };
+  // --- MAIN section ---
+  RotaryKnob mixKnob;
+  RotaryKnob decayKnob;
+  RotaryKnob preDelayKnob;
+  RotaryKnob diffusionKnob;
 
-  ParamSlider mixSlider;
-  ParamSlider decaySlider;
-  ParamSlider preDelaySlider;
-  ParamSlider diffusionSlider;
-  ParamSlider dampingSlider;
-  ParamSlider lowDampSlider;
-  ParamSlider modRateSlider;
-  ParamSlider modDepthSlider;
-  ParamSlider lowCutSlider;
-  ParamSlider highCutSlider;
-  ParamSlider freezeSlider;
-  ParamSlider saturationSlider;
+  // --- TONE section ---
+  RotaryKnob dampingKnob;
+  RotaryKnob lowDampKnob;
+  RotaryKnob lowCutKnob;
+  RotaryKnob highCutKnob;
 
-  // Freeze On toggle
-  juce::ToggleButton freezeOnButton{"Freeze On"};
-  std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment>
-      freezeOnAttachment;
+  // --- MODULATION section ---
+  RotaryKnob modRateKnob;
+  RotaryKnob modDepthKnob;
 
-  // Helper to set up a single param slider
-  void setupSlider(ParamSlider &ps, const juce::String &labelText,
-                   const juce::String &paramID);
+  // --- CHARACTER section ---
+  RotaryKnob saturationKnob;
+  RotaryKnob freezeKnob;
+  FreezeButton freezeOnBtn;
+
+  // Helpers
+  void drawSectionPanel(juce::Graphics &g, juce::Rectangle<int> bounds,
+                        const juce::String &title);
 
   JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(TailwindAudioProcessorEditor)
 };

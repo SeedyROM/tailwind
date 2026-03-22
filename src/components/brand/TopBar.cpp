@@ -6,13 +6,22 @@ TopBar::TopBar() {
   int logoDataSize = 0;
   const char *logoData = BinaryData::getNamedResource("logo_png", logoDataSize);
   if (logoData != nullptr && logoDataSize > 0) {
-    logo = juce::ImageFileFormat::loadFrom(logoData, static_cast<size_t>(logoDataSize));
+    logo = juce::ImageFileFormat::loadFrom(logoData,
+                                           static_cast<size_t>(logoDataSize));
   }
 }
 
 void TopBar::paint(juce::Graphics &g) {
-  // Draw background
-  g.fillAll(juce::Colour(0xff1a1a1a));
+  auto bounds = getLocalBounds().toFloat();
+
+  // Background — subtle warm gradient
+  {
+    juce::ColourGradient bg(juce::Colour(TailwindColors::topBarBg), 0.0f, 0.0f,
+                            juce::Colour(TailwindColors::background),
+                            bounds.getWidth(), 0.0f, false);
+    g.setGradientFill(bg);
+    g.fillRect(bounds);
+  }
 
   // Draw logo if loaded (left side)
   if (logo.isValid()) {
@@ -20,15 +29,34 @@ void TopBar::paint(juce::Graphics &g) {
     const int logoWidth = logo.getWidth() * logoHeight / logo.getHeight();
     const int logoX = 15;
     const int logoY = (getHeight() - logoHeight) / 2;
-    g.drawImage(logo, logoX, logoY, logoWidth, logoHeight, 0, 0, logo.getWidth(),
-                logo.getHeight());
+    g.drawImage(logo, logoX, logoY, logoWidth, logoHeight, 0, 0,
+                logo.getWidth(), logo.getHeight());
   }
 
-  // Draw border at bottom
-  g.setColour(juce::Colour(0xff333333));
-  g.drawLine(0, getHeight() - 1, getWidth(), getHeight() - 1, 1.0f);
+  // Plugin name on the right side
+  {
+    auto textBounds = getLocalBounds().reduced(16, 0);
+    g.setColour(juce::Colour(TailwindColors::titleText));
+    g.setFont(juce::Font(15.0f, juce::Font::bold));
+    g.drawText("TAILWIND", textBounds, juce::Justification::centredRight);
+  }
+
+  // Subtitle
+  {
+    auto subtitleBounds = getLocalBounds().reduced(16, 0);
+    subtitleBounds.removeFromRight(100);
+    g.setColour(juce::Colour(TailwindColors::sectionTitle));
+    g.setFont(juce::Font(10.0f));
+    g.drawText("Long Tail Reverb", subtitleBounds,
+               juce::Justification::centredRight);
+  }
+
+  // Bottom border — warm accent line
+  g.setColour(juce::Colour(TailwindColors::accentWarm).withAlpha(0.4f));
+  g.drawLine(0.0f, bounds.getBottom() - 1.0f, bounds.getWidth(),
+             bounds.getBottom() - 1.0f, 1.0f);
 }
 
 void TopBar::resized() {
-  // No controls to layout in this simplified version
+  // No child components to layout
 }
