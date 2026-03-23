@@ -18,11 +18,11 @@ public:
   void prepareToPlay(double sampleRate, int samplesPerBlock) override;
   void releaseResources() override;
 
-  bool isBusesLayoutSupported(const BusesLayout &layouts) const override;
+  bool isBusesLayoutSupported(const BusesLayout& layouts) const override;
 
-  void processBlock(juce::AudioBuffer<float> &, juce::MidiBuffer &) override;
+  void processBlock(juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
 
-  juce::AudioProcessorEditor *createEditor() override;
+  juce::AudioProcessorEditor* createEditor() override;
   bool hasEditor() const override;
 
   const juce::String getName() const override;
@@ -36,26 +36,34 @@ public:
   int getCurrentProgram() override;
   void setCurrentProgram(int index) override;
   const juce::String getProgramName(int index) override;
-  void changeProgramName(int index, const juce::String &newName) override;
+  void changeProgramName(int index, const juce::String& newName) override;
 
-  void getStateInformation(juce::MemoryBlock &destData) override;
-  void setStateInformation(const void *data, int sizeInBytes) override;
+  void getStateInformation(juce::MemoryBlock& destData) override;
+  void setStateInformation(const void* data, int sizeInBytes) override;
 
   // Public access to APVTS for the editor
   juce::AudioProcessorValueTreeState apvts;
 
   // Public access to the bridge for the editor (e.g. for reading param values)
-  FaustBridge &getFaustBridge() { return faustBridge; }
-  float getInputMeterPeak() const { return inputMeterPeak.load(); }
-  float getOutputMeterPeak() const { return outputMeterPeak.load(); }
-  ABSlot getActiveABSlot() const { return activeABSlot; }
+  FaustBridge& getFaustBridge() {
+    return faustBridge;
+  }
+  float getInputMeterPeak() const {
+    return inputMeterPeak.load();
+  }
+  float getOutputMeterPeak() const {
+    return outputMeterPeak.load();
+  }
+  ABSlot getActiveABSlot() const {
+    return activeABSlot;
+  }
   bool hasDistinctABState() const;
   juce::StringArray getAvailablePresetNames() const;
   juce::String getActivePresetName() const;
   juce::String getDisplayedPresetName();
   bool isActivePresetFactory() const;
-  bool loadPreset(const juce::String &presetName);
-  bool saveUserPreset(const juce::String &presetName);
+  bool loadPreset(const juce::String& presetName);
+  bool saveUserPreset(const juce::String& presetName);
   bool deleteActiveUserPreset();
   void revealPresetDirectory() const;
   void clearABState();
@@ -68,18 +76,16 @@ private:
 
   juce::ValueTree captureCurrentState();
   juce::ValueTree createWrappedPluginState(bool includeABState);
-  juce::ValueTree extractPluginStateFromSavedTree(
-      const juce::ValueTree &savedTree) const;
+  juce::ValueTree extractPluginStateFromSavedTree(const juce::ValueTree& savedTree) const;
   juce::ValueTree migrateStateTree(juce::ValueTree savedTree) const;
-  void applyStateToApvts(const juce::ValueTree &stateToApply);
+  void applyStateToApvts(const juce::ValueTree& stateToApply);
   void initialiseABSlotsFromCurrentState();
   void syncActiveABSlotFromCurrentState();
-  void sanitiseTransientState(juce::ValueTree &state) const;
-  void setActivePresetName(const juce::String &presetName);
-  juce::ValueTree &getMutableABState(ABSlot slot);
-  const juce::ValueTree &getABState(ABSlot slot) const;
-  void updatePeakMeter(std::atomic<float> &meterState, float blockPeak,
-                       int numSamples) noexcept;
+  void sanitiseTransientState(juce::ValueTree& state) const;
+  void setActivePresetName(const juce::String& presetName);
+  juce::ValueTree& getMutableABState(ABSlot slot);
+  const juce::ValueTree& getABState(ABSlot slot) const;
+  void updatePeakMeter(std::atomic<float>& meterState, float blockPeak, int numSamples) noexcept;
 
   FaustBridge faustBridge;
   juce::ValueTree defaultPresetState;

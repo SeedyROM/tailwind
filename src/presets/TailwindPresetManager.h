@@ -13,21 +13,19 @@ public:
     juce::ValueTree state;
   };
 
-  static std::vector<PresetInfo>
-  getAvailablePresets(const juce::ValueTree &referenceState,
-                      const juce::Identifier &pluginStateType);
+  static std::vector<PresetInfo> getAvailablePresets(const juce::ValueTree& referenceState,
+                                                     const juce::Identifier& pluginStateType);
 
-  static juce::ValueTree loadPresetState(const juce::String &presetName,
-                                         const juce::ValueTree &referenceState,
-                                         const juce::Identifier &pluginStateType);
+  static juce::ValueTree loadPresetState(const juce::String& presetName,
+                                         const juce::ValueTree& referenceState,
+                                         const juce::Identifier& pluginStateType);
 
-  static bool saveUserPreset(const juce::String &presetName,
-                             const juce::ValueTree &wrappedState);
-  static bool deleteUserPreset(const juce::String &presetName);
+  static bool saveUserPreset(const juce::String& presetName, const juce::ValueTree& wrappedState);
+  static bool deleteUserPreset(const juce::String& presetName);
   static void revealPresetDirectory();
-  static bool isFactoryPreset(const juce::String &presetName,
-                              const juce::ValueTree &referenceState,
-                              const juce::Identifier &pluginStateType);
+  static bool isFactoryPreset(const juce::String& presetName,
+                              const juce::ValueTree& referenceState,
+                              const juce::Identifier& pluginStateType);
 
 private:
   static juce::File getPresetDirectory();

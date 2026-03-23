@@ -19,12 +19,10 @@ constexpr auto abSlotNameB = "B";
 } // namespace
 
 TailwindAudioProcessor::TailwindAudioProcessor()
-    : AudioProcessor(
-          BusesProperties()
-              .withInput("Input", juce::AudioChannelSet::stereo(), true)
-              .withOutput("Output", juce::AudioChannelSet::stereo(), true)),
-      apvts(*this, nullptr, "Parameters", FaustParams::createLayout()),
-      faustBridge(apvts) {
+    : AudioProcessor(BusesProperties()
+                         .withInput("Input", juce::AudioChannelSet::stereo(), true)
+                         .withOutput("Output", juce::AudioChannelSet::stereo(), true)),
+      apvts(*this, nullptr, "Parameters", FaustParams::createLayout()), faustBridge(apvts) {
   defaultPresetState = captureCurrentState();
   initialiseABSlotsFromCurrentState();
 }
@@ -35,11 +33,17 @@ const juce::String TailwindAudioProcessor::getName() const {
   return JucePlugin_Name;
 }
 
-bool TailwindAudioProcessor::acceptsMidi() const { return false; }
+bool TailwindAudioProcessor::acceptsMidi() const {
+  return false;
+}
 
-bool TailwindAudioProcessor::producesMidi() const { return false; }
+bool TailwindAudioProcessor::producesMidi() const {
+  return false;
+}
 
-bool TailwindAudioProcessor::isMidiEffect() const { return false; }
+bool TailwindAudioProcessor::isMidiEffect() const {
+  return false;
+}
 
 double TailwindAudioProcessor::getTailLengthSeconds() const {
   constexpr double minDecay = 0.1;
@@ -55,24 +59,26 @@ double TailwindAudioProcessor::getTailLengthSeconds() const {
   const auto decayParam = apvts.getRawParameterValue(FaustParamIDs::decay);
   const auto predelayParam = apvts.getRawParameterValue(FaustParamIDs::preDelayMs);
 
-  const auto decay = juce::jlimit(
-      static_cast<float>(minDecay), static_cast<float>(maxDecay),
-      decayParam != nullptr ? decayParam->load() : 0.85f);
-  const auto predelayMs = juce::jlimit(
-      0.0f, 500.0f,
-      predelayParam != nullptr ? predelayParam->load() : 20.0f);
+  const auto decay = juce::jlimit(static_cast<float>(minDecay),
+                                  static_cast<float>(maxDecay),
+                                  decayParam != nullptr ? decayParam->load() : 0.85f);
+  const auto predelayMs =
+      juce::jlimit(0.0f, 500.0f, predelayParam != nullptr ? predelayParam->load() : 20.0f);
 
-  const auto normalizedDecay = (decay - static_cast<float>(minDecay)) /
-                               static_cast<float>(maxDecay - minDecay);
-  const auto t60Seconds =
-      minT60Seconds * std::pow(maxT60Seconds / minT60Seconds, normalizedDecay);
+  const auto normalizedDecay =
+      (decay - static_cast<float>(minDecay)) / static_cast<float>(maxDecay - minDecay);
+  const auto t60Seconds = minT60Seconds * std::pow(maxT60Seconds / minT60Seconds, normalizedDecay);
 
   return (predelayMs / 1000.0) + t60Seconds;
 }
 
-int TailwindAudioProcessor::getNumPrograms() { return 1; }
+int TailwindAudioProcessor::getNumPrograms() {
+  return 1;
+}
 
-int TailwindAudioProcessor::getCurrentProgram() { return 0; }
+int TailwindAudioProcessor::getCurrentProgram() {
+  return 0;
+}
 
 void TailwindAudioProcessor::setCurrentProgram(int index) {
   juce::ignoreUnused(index);
@@ -83,13 +89,11 @@ const juce::String TailwindAudioProcessor::getProgramName(int index) {
   return {};
 }
 
-void TailwindAudioProcessor::changeProgramName(int index,
-                                              const juce::String &newName) {
+void TailwindAudioProcessor::changeProgramName(int index, const juce::String& newName) {
   juce::ignoreUnused(index, newName);
 }
 
-void TailwindAudioProcessor::prepareToPlay(double sampleRate,
-                                           int samplesPerBlock) {
+void TailwindAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBlock) {
   currentSampleRate = sampleRate;
   inputMeterPeak.store(0.0f);
   outputMeterPeak.store(0.0f);
@@ -106,25 +110,19 @@ juce::ValueTree TailwindAudioProcessor::captureCurrentState() {
   return state;
 }
 
-juce::ValueTree TailwindAudioProcessor::createWrappedPluginState(
-    bool includeABState) {
+juce::ValueTree TailwindAudioProcessor::createWrappedPluginState(bool includeABState) {
   juce::ValueTree wrappedState(pluginStateRootType);
-  wrappedState.setProperty(pluginStatePropertySchemaVersion, stateSchemaVersion,
-                           nullptr);
-  wrappedState.setProperty(pluginStatePropertyPluginVersion,
-                           JucePlugin_VersionString, nullptr);
+  wrappedState.setProperty(pluginStatePropertySchemaVersion, stateSchemaVersion, nullptr);
+  wrappedState.setProperty(pluginStatePropertyPluginVersion, JucePlugin_VersionString, nullptr);
   syncActiveABSlotFromCurrentState();
   wrappedState.appendChild(captureCurrentState(), nullptr);
 
   if (includeABState) {
     wrappedState.setProperty(pluginStatePropertyActiveABSlot,
-                             activeABSlot == ABSlot::A ? abSlotNameA
-                                                       : abSlotNameB,
+                             activeABSlot == ABSlot::A ? abSlotNameA : abSlotNameB,
                              nullptr);
-    wrappedState.setProperty(pluginStatePropertySlotAPresetName, slotAPresetName,
-                             nullptr);
-    wrappedState.setProperty(pluginStatePropertySlotBPresetName, slotBPresetName,
-                             nullptr);
+    wrappedState.setProperty(pluginStatePropertySlotAPresetName, slotAPresetName, nullptr);
+    wrappedState.setProperty(pluginStatePropertySlotBPresetName, slotBPresetName, nullptr);
 
     juce::ValueTree slotAWrapper(pluginStateChildSlotA);
     slotAWrapper.appendChild(slotAState.createCopy(), nullptr);
@@ -138,20 +136,16 @@ juce::ValueTree TailwindAudioProcessor::createWrappedPluginState(
   return wrappedState;
 }
 
-juce::ValueTree TailwindAudioProcessor::migrateStateTree(
-    juce::ValueTree savedTree) const {
+juce::ValueTree TailwindAudioProcessor::migrateStateTree(juce::ValueTree savedTree) const {
   auto schemaVersion = savedTree.getProperty(pluginStatePropertySchemaVersion);
   if (!schemaVersion.isInt() || static_cast<int>(schemaVersion) < 1)
-    savedTree.setProperty(pluginStatePropertySchemaVersion, stateSchemaVersion,
-                          nullptr);
+    savedTree.setProperty(pluginStatePropertySchemaVersion, stateSchemaVersion, nullptr);
 
   if (!savedTree.hasProperty(pluginStatePropertyPluginVersion))
-    savedTree.setProperty(pluginStatePropertyPluginVersion,
-                          JucePlugin_VersionString, nullptr);
+    savedTree.setProperty(pluginStatePropertyPluginVersion, JucePlugin_VersionString, nullptr);
 
   if (!savedTree.hasProperty(pluginStatePropertyActiveABSlot))
-    savedTree.setProperty(pluginStatePropertyActiveABSlot, abSlotNameA,
-                          nullptr);
+    savedTree.setProperty(pluginStatePropertyActiveABSlot, abSlotNameA, nullptr);
 
   if (!savedTree.hasProperty(pluginStatePropertySlotAPresetName))
     savedTree.setProperty(pluginStatePropertySlotAPresetName, "Init", nullptr);
@@ -162,8 +156,8 @@ juce::ValueTree TailwindAudioProcessor::migrateStateTree(
   return savedTree;
 }
 
-juce::ValueTree TailwindAudioProcessor::extractPluginStateFromSavedTree(
-    const juce::ValueTree &savedTree) const {
+juce::ValueTree
+TailwindAudioProcessor::extractPluginStateFromSavedTree(const juce::ValueTree& savedTree) const {
   if (!savedTree.isValid())
     return {};
 
@@ -178,8 +172,7 @@ juce::ValueTree TailwindAudioProcessor::extractPluginStateFromSavedTree(
   return pluginState.isValid() ? pluginState.createCopy() : juce::ValueTree{};
 }
 
-void TailwindAudioProcessor::applyStateToApvts(
-    const juce::ValueTree &stateToApply) {
+void TailwindAudioProcessor::applyStateToApvts(const juce::ValueTree& stateToApply) {
   if (!stateToApply.isValid())
     return;
 
@@ -203,7 +196,7 @@ void TailwindAudioProcessor::syncActiveABSlotFromCurrentState() {
   getMutableABState(activeABSlot) = captureCurrentState();
 }
 
-void TailwindAudioProcessor::sanitiseTransientState(juce::ValueTree &state) const {
+void TailwindAudioProcessor::sanitiseTransientState(juce::ValueTree& state) const {
   for (int i = 0; i < state.getNumChildren(); ++i) {
     auto child = state.getChild(i);
     if (child.hasProperty("id") && child["id"].toString() == "freeze_on")
@@ -211,18 +204,18 @@ void TailwindAudioProcessor::sanitiseTransientState(juce::ValueTree &state) cons
   }
 }
 
-void TailwindAudioProcessor::setActivePresetName(const juce::String &presetName) {
+void TailwindAudioProcessor::setActivePresetName(const juce::String& presetName) {
   if (activeABSlot == ABSlot::A)
     slotAPresetName = presetName;
   else
     slotBPresetName = presetName;
 }
 
-juce::ValueTree &TailwindAudioProcessor::getMutableABState(ABSlot slot) {
+juce::ValueTree& TailwindAudioProcessor::getMutableABState(ABSlot slot) {
   return slot == ABSlot::A ? slotAState : slotBState;
 }
 
-const juce::ValueTree &TailwindAudioProcessor::getABState(ABSlot slot) const {
+const juce::ValueTree& TailwindAudioProcessor::getABState(ABSlot slot) const {
   return slot == ABSlot::A ? slotAState : slotBState;
 }
 
@@ -260,9 +253,8 @@ void TailwindAudioProcessor::swapABSlots() {
 
 juce::StringArray TailwindAudioProcessor::getAvailablePresetNames() const {
   juce::StringArray names;
-  for (const auto &preset :
-       TailwindPresetManager::getAvailablePresets(defaultPresetState,
-                                                  apvts.state.getType()))
+  for (const auto& preset :
+       TailwindPresetManager::getAvailablePresets(defaultPresetState, apvts.state.getType()))
     names.add(preset.name);
   return names;
 }
@@ -290,14 +282,13 @@ juce::String TailwindAudioProcessor::getDisplayedPresetName() {
 }
 
 bool TailwindAudioProcessor::isActivePresetFactory() const {
-  return TailwindPresetManager::isFactoryPreset(getActivePresetName(),
-                                                defaultPresetState,
-                                                apvts.state.getType());
+  return TailwindPresetManager::isFactoryPreset(
+      getActivePresetName(), defaultPresetState, apvts.state.getType());
 }
 
-bool TailwindAudioProcessor::loadPreset(const juce::String &presetName) {
-  auto presetState = TailwindPresetManager::loadPresetState(
-      presetName, defaultPresetState, apvts.state.getType());
+bool TailwindAudioProcessor::loadPreset(const juce::String& presetName) {
+  auto presetState =
+      TailwindPresetManager::loadPresetState(presetName, defaultPresetState, apvts.state.getType());
   if (!presetState.isValid())
     return false;
 
@@ -307,7 +298,7 @@ bool TailwindAudioProcessor::loadPreset(const juce::String &presetName) {
   return true;
 }
 
-bool TailwindAudioProcessor::saveUserPreset(const juce::String &presetName) {
+bool TailwindAudioProcessor::saveUserPreset(const juce::String& presetName) {
   syncActiveABSlotFromCurrentState();
   auto wrappedState = createWrappedPluginState(false);
   if (!TailwindPresetManager::saveUserPreset(presetName, wrappedState))
@@ -320,8 +311,7 @@ bool TailwindAudioProcessor::saveUserPreset(const juce::String &presetName) {
 bool TailwindAudioProcessor::deleteActiveUserPreset() {
   auto presetName = getActivePresetName();
   if (presetName.isEmpty() ||
-      TailwindPresetManager::isFactoryPreset(presetName, defaultPresetState,
-                                             apvts.state.getType()))
+      TailwindPresetManager::isFactoryPreset(presetName, defaultPresetState, apvts.state.getType()))
     return false;
 
   if (!TailwindPresetManager::deleteUserPreset(presetName))
@@ -342,9 +332,9 @@ void TailwindAudioProcessor::clearABState() {
   activeABSlot = ABSlot::A;
 }
 
-void TailwindAudioProcessor::updatePeakMeter(std::atomic<float> &meterState,
-                                            float blockPeak,
-                                            int numSamples) noexcept {
+void TailwindAudioProcessor::updatePeakMeter(std::atomic<float>& meterState,
+                                             float blockPeak,
+                                             int numSamples) noexcept {
   const auto heldPeak = meterState.load(std::memory_order_relaxed);
   if (blockPeak >= heldPeak) {
     meterState.store(blockPeak, std::memory_order_relaxed);
@@ -352,29 +342,27 @@ void TailwindAudioProcessor::updatePeakMeter(std::atomic<float> &meterState,
   }
 
   const auto decayTimeSeconds = 0.16f;
-  const auto decay = std::exp(
-      -static_cast<float>(numSamples) /
-      static_cast<float>(juce::jmax(1.0, currentSampleRate * decayTimeSeconds)));
+  const auto decay =
+      std::exp(-static_cast<float>(numSamples) /
+               static_cast<float>(juce::jmax(1.0, currentSampleRate * decayTimeSeconds)));
   meterState.store(heldPeak * decay, std::memory_order_relaxed);
 }
 
-bool TailwindAudioProcessor::isBusesLayoutSupported(
-    const BusesLayout &layouts) const {
+bool TailwindAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const {
   const auto mainInput = layouts.getMainInputChannelSet();
   const auto mainOutput = layouts.getMainOutputChannelSet();
 
   if (mainOutput != juce::AudioChannelSet::stereo())
     return false;
 
-  if (mainInput != juce::AudioChannelSet::mono() &&
-      mainInput != juce::AudioChannelSet::stereo())
+  if (mainInput != juce::AudioChannelSet::mono() && mainInput != juce::AudioChannelSet::stereo())
     return false;
 
   return true;
 }
 
-void TailwindAudioProcessor::processBlock(juce::AudioBuffer<float> &buffer,
-                                         juce::MidiBuffer &midiMessages) {
+void TailwindAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
+                                          juce::MidiBuffer& midiMessages) {
   juce::ignoreUnused(midiMessages);
   juce::ScopedNoDenormals noDenormals;
 
@@ -393,15 +381,13 @@ void TailwindAudioProcessor::processBlock(juce::AudioBuffer<float> &buffer,
   };
 
   const auto inputGainDb = apvts.getRawParameterValue(FaustParamIDs::inputGainDb);
-  const auto outputGainDb =
-      apvts.getRawParameterValue(FaustParamIDs::outputGainDb);
-  const auto inputGainLinear = juce::Decibels::decibelsToGain(
-      inputGainDb != nullptr ? inputGainDb->load() : 0.0f);
+  const auto outputGainDb = apvts.getRawParameterValue(FaustParamIDs::outputGainDb);
+  const auto inputGainLinear =
+      juce::Decibels::decibelsToGain(inputGainDb != nullptr ? inputGainDb->load() : 0.0f);
   juce::ignoreUnused(outputGainDb);
 
   updatePeakMeter(inputMeterPeak,
-                  juce::jlimit(0.0f, 1.2f,
-                               getMaxPeak(totalNumInputChannels) * inputGainLinear),
+                  juce::jlimit(0.0f, 1.2f, getMaxPeak(totalNumInputChannels) * inputGainLinear),
                   buffer.getNumSamples());
 
   faustBridge.process(buffer, totalNumInputChannels, totalNumOutputChannels);
@@ -411,20 +397,21 @@ void TailwindAudioProcessor::processBlock(juce::AudioBuffer<float> &buffer,
                   buffer.getNumSamples());
 }
 
-bool TailwindAudioProcessor::hasEditor() const { return true; }
+bool TailwindAudioProcessor::hasEditor() const {
+  return true;
+}
 
-juce::AudioProcessorEditor *TailwindAudioProcessor::createEditor() {
+juce::AudioProcessorEditor* TailwindAudioProcessor::createEditor() {
   return new TailwindAudioProcessorEditor(*this);
 }
 
-void TailwindAudioProcessor::getStateInformation(juce::MemoryBlock &destData) {
+void TailwindAudioProcessor::getStateInformation(juce::MemoryBlock& destData) {
   auto state = createWrappedPluginState(true);
   std::unique_ptr<juce::XmlElement> xml(state.createXml());
   copyXmlToBinary(*xml, destData);
 }
 
-void TailwindAudioProcessor::setStateInformation(const void *data,
-                                                 int sizeInBytes) {
+void TailwindAudioProcessor::setStateInformation(const void* data, int sizeInBytes) {
   std::unique_ptr<juce::XmlElement> xml(getXmlFromBinary(data, sizeInBytes));
   if (xml == nullptr)
     return;
@@ -438,27 +425,20 @@ void TailwindAudioProcessor::setStateInformation(const void *data,
 
   if (restoredTree.hasType(pluginStateRootType)) {
     auto migratedTree = migrateStateTree(restoredTree.createCopy());
-    auto restoredSlotAWrapper =
-        migratedTree.getChildWithName(pluginStateChildSlotA);
-    auto restoredSlotBWrapper =
-        migratedTree.getChildWithName(pluginStateChildSlotB);
+    auto restoredSlotAWrapper = migratedTree.getChildWithName(pluginStateChildSlotA);
+    auto restoredSlotBWrapper = migratedTree.getChildWithName(pluginStateChildSlotB);
 
-    auto restoredSlotA =
-        restoredSlotAWrapper.getChildWithName(apvts.state.getType());
-    auto restoredSlotB =
-        restoredSlotBWrapper.getChildWithName(apvts.state.getType());
+    auto restoredSlotA = restoredSlotAWrapper.getChildWithName(apvts.state.getType());
+    auto restoredSlotB = restoredSlotBWrapper.getChildWithName(apvts.state.getType());
 
     if (restoredSlotA.isValid() && restoredSlotB.isValid()) {
       slotAState = restoredSlotA.createCopy();
       slotBState = restoredSlotB.createCopy();
-      slotAPresetName =
-          migratedTree[pluginStatePropertySlotAPresetName].toString();
-      slotBPresetName =
-          migratedTree[pluginStatePropertySlotBPresetName].toString();
-      activeABSlot =
-          migratedTree[pluginStatePropertyActiveABSlot].toString() == abSlotNameB
-              ? ABSlot::B
-              : ABSlot::A;
+      slotAPresetName = migratedTree[pluginStatePropertySlotAPresetName].toString();
+      slotBPresetName = migratedTree[pluginStatePropertySlotBPresetName].toString();
+      activeABSlot = migratedTree[pluginStatePropertyActiveABSlot].toString() == abSlotNameB
+                         ? ABSlot::B
+                         : ABSlot::A;
       applyStateToApvts(getABState(activeABSlot));
       return;
     }
@@ -467,6 +447,6 @@ void TailwindAudioProcessor::setStateInformation(const void *data,
   initialiseABSlotsFromCurrentState();
 }
 
-juce::AudioProcessor *JUCE_CALLTYPE createPluginFilter() {
+juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter() {
   return new TailwindAudioProcessor();
 }

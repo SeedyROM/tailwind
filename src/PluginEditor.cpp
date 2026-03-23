@@ -4,10 +4,8 @@
 
 #include <memory>
 
-TailwindAudioProcessorEditor::TailwindAudioProcessorEditor(
-    TailwindAudioProcessor &p)
-    : AudioProcessorEditor(&p),
-      audioProcessor(p),
+TailwindAudioProcessorEditor::TailwindAudioProcessorEditor(TailwindAudioProcessor& p)
+    : AudioProcessorEditor(&p), audioProcessor(p),
       // MAIN
       mixKnob(p.apvts, FaustParamIDs::mix, "MIX", " %", true),
       decayKnob(p.apvts, FaustParamIDs::decay, "DECAY", " %", true),
@@ -22,8 +20,7 @@ TailwindAudioProcessorEditor::TailwindAudioProcessorEditor(
       modRateKnob(p.apvts, FaustParamIDs::modRateHz, "RATE", " Hz"),
       modDepthKnob(p.apvts, FaustParamIDs::modDepth, "DEPTH", " %", true),
       // CHARACTER
-      saturationKnob(p.apvts, FaustParamIDs::saturation, "SATURATION", " %",
-                     true),
+      saturationKnob(p.apvts, FaustParamIDs::saturation, "SATURATION", " %", true),
       freezeKnob(p.apvts, FaustParamIDs::freeze, "FREEZE", " %", true),
       freezeOnBtn(p.apvts, FaustParamIDs::freezeOn),
       // GAIN STAGING
@@ -45,13 +42,12 @@ TailwindAudioProcessorEditor::TailwindAudioProcessorEditor(
     topBar.setActiveABSlot(false);
     refreshPresetControls();
   };
-  topBar.onPresetSelected = [this](const juce::String &presetName) {
+  topBar.onPresetSelected = [this](const juce::String& presetName) {
     if (audioProcessor.loadPreset(presetName))
       refreshPresetControls();
   };
   topBar.onShowOptionsMenu = [this] { showOptionsMenu(); };
-  topBar.setActiveABSlot(audioProcessor.getActiveABSlot() ==
-                         TailwindAudioProcessor::ABSlot::A);
+  topBar.setActiveABSlot(audioProcessor.getActiveABSlot() == TailwindAudioProcessor::ABSlot::A);
   refreshPresetControls();
 
   // Main section knobs
@@ -102,26 +98,26 @@ void TailwindAudioProcessorEditor::timerCallback() {
 void TailwindAudioProcessorEditor::refreshPresetControls() {
   topBar.setPresetNames(audioProcessor.getAvailablePresetNames());
   topBar.setSelectedPresetName(audioProcessor.getDisplayedPresetName());
-  topBar.setActiveABSlot(audioProcessor.getActiveABSlot() ==
-                         TailwindAudioProcessor::ABSlot::A);
+  topBar.setActiveABSlot(audioProcessor.getActiveABSlot() == TailwindAudioProcessor::ABSlot::A);
 }
 
 void TailwindAudioProcessorEditor::promptSavePreset() {
-  auto dialog = std::make_unique<juce::AlertWindow>("Save Preset", "Enter a preset name.",
-                                                    juce::AlertWindow::NoIcon);
-  dialog->addTextEditor("presetName", audioProcessor.getActivePresetName(),
-                        "Preset name");
+  auto dialog = std::make_unique<juce::AlertWindow>(
+      "Save Preset", "Enter a preset name.", juce::AlertWindow::NoIcon);
+  dialog->addTextEditor("presetName", audioProcessor.getActivePresetName(), "Preset name");
   dialog->addButton("Save", 1);
   dialog->addButton("Cancel", 0);
 
-  auto *dialogPtr = dialog.release();
-  dialogPtr->enterModalState(true, juce::ModalCallbackFunction::create([this, dialogPtr](int result) {
-                             std::unique_ptr<juce::AlertWindow> owner(dialogPtr);
-                             if (result == 1 &&
-                                 audioProcessor.saveUserPreset(dialogPtr->getTextEditorContents("presetName").trim()))
-                               refreshPresetControls();
-                           }),
-                             true);
+  auto* dialogPtr = dialog.release();
+  dialogPtr->enterModalState(
+      true,
+      juce::ModalCallbackFunction::create([this, dialogPtr](int result) {
+        std::unique_ptr<juce::AlertWindow> owner(dialogPtr);
+        if (result == 1 &&
+            audioProcessor.saveUserPreset(dialogPtr->getTextEditorContents("presetName").trim()))
+          refreshPresetControls();
+      }),
+      true);
 }
 
 void TailwindAudioProcessorEditor::showOptionsMenu() {
@@ -131,40 +127,37 @@ void TailwindAudioProcessorEditor::showOptionsMenu() {
   menu.addItem(3, "Clear A/B", audioProcessor.hasDistinctABState());
   menu.addSeparator();
   menu.addItem(4, "Save Preset...");
-  menu.addItem(5, "Delete Current Preset",
+  menu.addItem(5,
+               "Delete Current Preset",
                !audioProcessor.getActivePresetName().isEmpty() &&
                    !audioProcessor.isActivePresetFactory());
   menu.addItem(6, "Reveal Presets Folder");
 
   menu.showMenuAsync(
-                     juce::PopupMenu::Options().withTargetComponent(
-                         topBar.getOptionsTargetComponent()),
-                     [this](int result) {
-                       if (result == 1)
-                         audioProcessor.copyABSlot(
-                             TailwindAudioProcessor::ABSlot::A,
-                             TailwindAudioProcessor::ABSlot::B);
-                       else if (result == 2)
-                         audioProcessor.copyABSlot(
-                             TailwindAudioProcessor::ABSlot::B,
-                             TailwindAudioProcessor::ABSlot::A);
-                       else if (result == 3)
-                         audioProcessor.clearABState();
-                       else if (result == 4)
-                         promptSavePreset();
-                       else if (result == 5)
-                         audioProcessor.deleteActiveUserPreset();
-                       else if (result == 6)
-                         audioProcessor.revealPresetDirectory();
+      juce::PopupMenu::Options().withTargetComponent(topBar.getOptionsTargetComponent()),
+      [this](int result) {
+        if (result == 1)
+          audioProcessor.copyABSlot(TailwindAudioProcessor::ABSlot::A,
+                                    TailwindAudioProcessor::ABSlot::B);
+        else if (result == 2)
+          audioProcessor.copyABSlot(TailwindAudioProcessor::ABSlot::B,
+                                    TailwindAudioProcessor::ABSlot::A);
+        else if (result == 3)
+          audioProcessor.clearABState();
+        else if (result == 4)
+          promptSavePreset();
+        else if (result == 5)
+          audioProcessor.deleteActiveUserPreset();
+        else if (result == 6)
+          audioProcessor.revealPresetDirectory();
 
-                       topBar.setActiveABSlot(
-                           audioProcessor.getActiveABSlot() ==
-                           TailwindAudioProcessor::ABSlot::A);
-                       refreshPresetControls();
-                     });
+        topBar.setActiveABSlot(audioProcessor.getActiveABSlot() ==
+                               TailwindAudioProcessor::ABSlot::A);
+        refreshPresetControls();
+      });
 }
 
-void TailwindAudioProcessorEditor::paint(juce::Graphics &g) {
+void TailwindAudioProcessorEditor::paint(juce::Graphics& g) {
   // Main background
   g.fillAll(juce::Colour(TailwindColors::background));
 
@@ -173,8 +166,7 @@ void TailwindAudioProcessorEditor::paint(juce::Graphics &g) {
   bounds.removeFromTop(50); // topBar
   bounds.reduce(12, 12);
 
-  const int topRowHeight =
-      juce::jlimit(280, 420, (bounds.getHeight() * 2) / 3);
+  const int topRowHeight = juce::jlimit(280, 420, (bounds.getHeight() * 2) / 3);
   const int bottomRowHeight = bounds.getHeight() - topRowHeight - 8;
 
   auto topRow = bounds.removeFromTop(topRowHeight);
@@ -214,8 +206,7 @@ void TailwindAudioProcessorEditor::resized() {
   // Content area with padding
   bounds.reduce(12, 12);
 
-  const int topRowHeight =
-      juce::jlimit(280, 420, (bounds.getHeight() * 2) / 3);
+  const int topRowHeight = juce::jlimit(280, 420, (bounds.getHeight() * 2) / 3);
   const int bottomRowHeight = bounds.getHeight() - topRowHeight - 8;
 
   auto topRow = bounds.removeFromTop(topRowHeight);
@@ -308,7 +299,8 @@ void TailwindAudioProcessorEditor::resized() {
     const int sidePadding = 12;
     const int availableWidth = juce::jmax(0, area.getWidth() - sidePadding * 2);
     const int freezeBtnW = juce::jlimit(100, 160, availableWidth / 3);
-    const int knobW = juce::jlimit(96, 160, juce::jmin(availableWidth / 3, availableWidth - freezeBtnW));
+    const int knobW =
+        juce::jlimit(96, 160, juce::jmin(availableWidth / 3, availableWidth - freezeBtnW));
 
     auto contentArea = area.reduced(sidePadding, 0);
     auto leftKnobArea = contentArea.removeFromLeft(knobW);
@@ -345,9 +337,9 @@ void TailwindAudioProcessorEditor::resized() {
   }
 }
 
-void TailwindAudioProcessorEditor::drawSectionPanel(juce::Graphics &g,
+void TailwindAudioProcessorEditor::drawSectionPanel(juce::Graphics& g,
                                                     juce::Rectangle<int> bounds,
-                                                    const juce::String &title) {
+                                                    const juce::String& title) {
   auto fb = bounds.toFloat();
 
   // Panel background

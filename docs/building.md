@@ -50,6 +50,23 @@ cmake --build build --config Release
 
 JUCE 7.0.12 is fetched automatically via CMake `FetchContent` from a release archive -- no git clone overhead, no submodule needed.
 
+## Pre-commit Formatting
+
+Install the formatter and hook runner locally:
+
+```bash
+brew install pre-commit clang-format
+pre-commit install
+```
+
+The repo ships with a `clang-format` pre-commit hook for C and C++ sources under `src/`. Vendored and generated code is excluded.
+
+Run it manually across tracked files at any time:
+
+```bash
+pre-commit run --all-files
+```
+
 ## CMake Options
 
 | Option | Default | Description |

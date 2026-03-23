@@ -10,16 +10,14 @@
  */
 class FreezeButton : public juce::Component {
 public:
-  FreezeButton(juce::AudioProcessorValueTreeState &apvts,
-               const juce::String &paramID);
+  FreezeButton(juce::AudioProcessorValueTreeState& apvts, const juce::String& paramID);
   ~FreezeButton() override = default;
 
   void resized() override;
 
 private:
   juce::ToggleButton button{"FREEZE"};
-  std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment>
-      attachment;
+  std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> attachment;
 
   JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(FreezeButton)
 };

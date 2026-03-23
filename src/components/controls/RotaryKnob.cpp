@@ -4,9 +4,9 @@
 
 namespace {
 
-juce::Label *findSliderValueLabel(juce::Slider &slider) {
+juce::Label* findSliderValueLabel(juce::Slider& slider) {
   for (int i = 0; i < slider.getNumChildComponents(); ++i)
-    if (auto *label = dynamic_cast<juce::Label *>(slider.getChildComponent(i)))
+    if (auto* label = dynamic_cast<juce::Label*>(slider.getChildComponent(i)))
       return label;
 
   return nullptr;
@@ -14,19 +14,17 @@ juce::Label *findSliderValueLabel(juce::Slider &slider) {
 
 } // namespace
 
-RotaryKnob::RotaryKnob(juce::AudioProcessorValueTreeState &apvts,
-                       const juce::String &paramID,
-                       const juce::String &labelText,
-                       const juce::String &suffix, bool showAsPercentage) {
+RotaryKnob::RotaryKnob(juce::AudioProcessorValueTreeState& apvts,
+                       const juce::String& paramID,
+                       const juce::String& labelText,
+                       const juce::String& suffix,
+                       bool showAsPercentage) {
   // Slider configuration
   slider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
   slider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 68, 22);
-  slider.setColour(juce::Slider::textBoxTextColourId,
-                   juce::Colour(TailwindColors::valueText));
-  slider.setColour(juce::Slider::textBoxBackgroundColourId,
-                   juce::Colours::transparentBlack);
-  slider.setColour(juce::Slider::textBoxOutlineColourId,
-                   juce::Colours::transparentBlack);
+  slider.setColour(juce::Slider::textBoxTextColourId, juce::Colour(TailwindColors::valueText));
+  slider.setColour(juce::Slider::textBoxBackgroundColourId, juce::Colours::transparentBlack);
+  slider.setColour(juce::Slider::textBoxOutlineColourId, juce::Colours::transparentBlack);
   slider.getProperties().set("tailwindShowMeter", false);
 
   slider.onValueChange = [this] { refreshMeter(); };
@@ -36,15 +34,13 @@ RotaryKnob::RotaryKnob(juce::AudioProcessorValueTreeState &apvts,
   // Label configuration
   label.setText(labelText, juce::dontSendNotification);
   label.setJustificationType(juce::Justification::centred);
-  label.setColour(juce::Label::textColourId,
-                  juce::Colour(TailwindColors::labelText));
+  label.setColour(juce::Label::textColourId, juce::Colour(TailwindColors::labelText));
   label.setFont(juce::Font(12.0f, juce::Font::bold));
   addAndMakeVisible(label);
 
   // APVTS attachment
-  attachment =
-      std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
-          apvts, paramID, slider);
+  attachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
+      apvts, paramID, slider);
 
   valueLabel = findSliderValueLabel(slider);
 
@@ -55,7 +51,7 @@ RotaryKnob::RotaryKnob(juce::AudioProcessorValueTreeState &apvts,
     slider.textFromValueFunction = [suffix](double value) {
       return juce::String(juce::roundToInt(value * 100.0)) + suffix;
     };
-    slider.valueFromTextFunction = [suffix](const juce::String &text) {
+    slider.valueFromTextFunction = [suffix](const juce::String& text) {
       auto stripped = text.trimCharactersAtEnd(suffix);
       return stripped.getDoubleValue() / 100.0;
     };
@@ -63,8 +59,7 @@ RotaryKnob::RotaryKnob(juce::AudioProcessorValueTreeState &apvts,
     // For non-percentage params, wrap the attachment's textFromValue
     // to append our suffix, since setTextValueSuffix may conflict.
     auto existingTextFromValue = slider.textFromValueFunction;
-    slider.textFromValueFunction = [existingTextFromValue,
-                                     suffix](double value) {
+    slider.textFromValueFunction = [existingTextFromValue, suffix](double value) {
       if (suffix == " Hz" && value >= 1000.0) {
         const auto truncatedKhz = std::floor(value / 10.0) / 100.0;
         return juce::String(truncatedKhz, 2) + " kHz";
@@ -74,12 +69,10 @@ RotaryKnob::RotaryKnob(juce::AudioProcessorValueTreeState &apvts,
         return existingTextFromValue(value) + suffix;
       return juce::String(value) + suffix;
     };
-    slider.valueFromTextFunction = [suffix](const juce::String &text) {
+    slider.valueFromTextFunction = [suffix](const juce::String& text) {
       auto trimmed = text.trim();
       if (suffix == " Hz" && trimmed.endsWithIgnoreCase("kHz"))
-        return trimmed.upToLastOccurrenceOf("k", false, false).trim()
-                   .getDoubleValue() *
-               1000.0;
+        return trimmed.upToLastOccurrenceOf("k", false, false).trim().getDoubleValue() * 1000.0;
 
       auto stripped = trimmed.trimCharactersAtEnd(suffix);
       return stripped.getDoubleValue();
@@ -106,10 +99,9 @@ void RotaryKnob::refreshMeter() {
 
   if (valueLabel != nullptr) {
     const auto useActiveMeterColour = meterColourValueText && meterPeak > 1.0e-4f;
-    valueLabel->setColour(
-        juce::Label::textColourId,
-        useActiveMeterColour ? TailwindColors::meterColourForPeak(meterPeak)
-                             : juce::Colour(TailwindColors::valueText));
+    valueLabel->setColour(juce::Label::textColourId,
+                          useActiveMeterColour ? TailwindColors::meterColourForPeak(meterPeak)
+                                               : juce::Colour(TailwindColors::valueText));
     valueLabel->repaint();
   }
 

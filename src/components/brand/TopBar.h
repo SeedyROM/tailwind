@@ -10,16 +10,16 @@ public:
   TopBar();
   ~TopBar() override = default;
 
-  void paint(juce::Graphics &g) override;
+  void paint(juce::Graphics& g) override;
   void resized() override;
   void setActiveABSlot(bool isSlotA);
-  void setPresetNames(const juce::StringArray &presetNames);
-  void setSelectedPresetName(const juce::String &presetName);
-  juce::Component *getOptionsTargetComponent();
+  void setPresetNames(const juce::StringArray& presetNames);
+  void setSelectedPresetName(const juce::String& presetName);
+  juce::Component* getOptionsTargetComponent();
 
   std::function<void()> onSelectSlotA;
   std::function<void()> onSelectSlotB;
-  std::function<void(const juce::String &presetName)> onPresetSelected;
+  std::function<void(const juce::String& presetName)> onPresetSelected;
   std::function<void()> onShowOptionsMenu;
 
 private:

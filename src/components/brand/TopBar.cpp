@@ -4,23 +4,20 @@
 TopBar::TopBar() {
   // Load logo image
   int logoDataSize = 0;
-  const char *logoData = BinaryData::getNamedResource("logo_png", logoDataSize);
+  const char* logoData = BinaryData::getNamedResource("logo_png", logoDataSize);
   if (logoData != nullptr && logoDataSize > 0) {
-    logo = juce::ImageFileFormat::loadFrom(logoData,
-                                           static_cast<size_t>(logoDataSize));
+    logo = juce::ImageFileFormat::loadFrom(logoData, static_cast<size_t>(logoDataSize));
   }
 
-  auto configureButton = [this](juce::TextButton &button) {
+  auto configureButton = [this](juce::TextButton& button) {
     addAndMakeVisible(button);
     button.setClickingTogglesState(false);
     button.setColour(juce::TextButton::buttonColourId,
                      juce::Colour(TailwindColors::panelBg).brighter(0.06f));
     button.setColour(juce::TextButton::buttonOnColourId,
                      juce::Colour(TailwindColors::accentWarm).withAlpha(0.22f));
-    button.setColour(juce::TextButton::textColourOffId,
-                     juce::Colour(TailwindColors::labelText));
-    button.setColour(juce::TextButton::textColourOnId,
-                     juce::Colour(TailwindColors::accentBright));
+    button.setColour(juce::TextButton::textColourOffId, juce::Colour(TailwindColors::labelText));
+    button.setColour(juce::TextButton::textColourOnId, juce::Colour(TailwindColors::accentBright));
   };
 
   addAndMakeVisible(presetBox);
@@ -55,7 +52,7 @@ void TopBar::setActiveABSlot(bool isSlotA) {
   slotBButton.setToggleState(!isSlotA, juce::dontSendNotification);
 }
 
-void TopBar::setPresetNames(const juce::StringArray &presetNames) {
+void TopBar::setPresetNames(const juce::StringArray& presetNames) {
   auto selectedText = presetBox.getText();
   presetBox.clear(juce::dontSendNotification);
 
@@ -66,7 +63,7 @@ void TopBar::setPresetNames(const juce::StringArray &presetNames) {
     setSelectedPresetName(selectedText);
 }
 
-void TopBar::setSelectedPresetName(const juce::String &presetName) {
+void TopBar::setSelectedPresetName(const juce::String& presetName) {
   for (int i = 0; i < presetBox.getNumItems(); ++i) {
     if (presetBox.getItemText(i) == presetName) {
       presetBox.setSelectedItemIndex(i, juce::dontSendNotification);
@@ -77,16 +74,22 @@ void TopBar::setSelectedPresetName(const juce::String &presetName) {
   presetBox.setText(presetName, juce::dontSendNotification);
 }
 
-juce::Component *TopBar::getOptionsTargetComponent() { return &optionsButton; }
+juce::Component* TopBar::getOptionsTargetComponent() {
+  return &optionsButton;
+}
 
-void TopBar::paint(juce::Graphics &g) {
+void TopBar::paint(juce::Graphics& g) {
   auto bounds = getLocalBounds().toFloat();
 
   // Background — subtle warm gradient
   {
-    juce::ColourGradient bg(juce::Colour(TailwindColors::topBarBg), 0.0f, 0.0f,
+    juce::ColourGradient bg(juce::Colour(TailwindColors::topBarBg),
+                            0.0f,
+                            0.0f,
                             juce::Colour(TailwindColors::background),
-                            bounds.getWidth(), 0.0f, false);
+                            bounds.getWidth(),
+                            0.0f,
+                            false);
     g.setGradientFill(bg);
     g.fillRect(bounds);
   }
@@ -97,26 +100,22 @@ void TopBar::paint(juce::Graphics &g) {
     const int logoWidth = logo.getWidth() * logoHeight / logo.getHeight();
     const int logoX = 15;
     const int logoY = (getHeight() - logoHeight) / 2;
-    g.drawImage(logo, logoX, logoY, logoWidth, logoHeight, 0, 0,
-                logo.getWidth(), logo.getHeight());
+    g.drawImage(logo, logoX, logoY, logoWidth, logoHeight, 0, 0, logo.getWidth(), logo.getHeight());
   }
 
   // Bottom border — warm accent line
   g.setColour(juce::Colour(TailwindColors::accentWarm).withAlpha(0.4f));
-  g.drawLine(0.0f, bounds.getBottom() - 1.0f, bounds.getWidth(),
-             bounds.getBottom() - 1.0f, 1.0f);
+  g.drawLine(0.0f, bounds.getBottom() - 1.0f, bounds.getWidth(), bounds.getBottom() - 1.0f, 1.0f);
 }
 
 void TopBar::resized() {
   auto bounds = getLocalBounds().reduced(10, 7);
   auto rightArea = bounds.removeFromRight(266);
 
-  auto positionControl = [](juce::Component &component,
-                            juce::Rectangle<int> &area, int width) {
+  auto positionControl = [](juce::Component& component, juce::Rectangle<int>& area, int width) {
     constexpr int controlHeight = 24;
     auto controlBounds = area.removeFromRight(width);
-    controlBounds.setY(controlBounds.getY() +
-                       (controlBounds.getHeight() - controlHeight) / 2);
+    controlBounds.setY(controlBounds.getY() + (controlBounds.getHeight() - controlHeight) / 2);
     controlBounds.setHeight(controlHeight);
     component.setBounds(controlBounds);
   };

@@ -8,16 +8,15 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 
-class TailwindAudioProcessorEditor : public juce::AudioProcessorEditor,
-                                     private juce::Timer {
+class TailwindAudioProcessorEditor : public juce::AudioProcessorEditor, private juce::Timer {
 public:
-  TailwindAudioProcessorEditor(TailwindAudioProcessor &);
+  TailwindAudioProcessorEditor(TailwindAudioProcessor&);
   ~TailwindAudioProcessorEditor() override;
 
-  void paint(juce::Graphics &) override;
+  void paint(juce::Graphics&) override;
   void resized() override;
 
- private:
+private:
   void timerCallback() override;
   void showOptionsMenu();
   void promptSavePreset();
@@ -26,7 +25,7 @@ public:
   static constexpr int minEditorWidth = 760;
   static constexpr int minEditorHeight = 520;
 
-  TailwindAudioProcessor &audioProcessor;
+  TailwindAudioProcessor& audioProcessor;
 
   // Custom look and feel
   TailwindLookAndFeel tailwindLnf;
@@ -60,8 +59,7 @@ public:
   RotaryKnob outputGainKnob;
 
   // Helpers
-  void drawSectionPanel(juce::Graphics &g, juce::Rectangle<int> bounds,
-                        const juce::String &title);
+  void drawSectionPanel(juce::Graphics& g, juce::Rectangle<int> bounds, const juce::String& title);
 
   JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(TailwindAudioProcessorEditor)
 };
