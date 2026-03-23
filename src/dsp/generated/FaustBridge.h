@@ -16,39 +16,57 @@ public:
         : apvts_(apvts) {}
 
     /// Call from prepareToPlay
-    void prepare(double sampleRate, int /*samplesPerBlock*/)
+    void prepare(double sampleRate, int samplesPerBlock)
     {
         dsp_.init(static_cast<int>(sampleRate));
+        resizeScratchBuffers(samplesPerBlock);
     }
 
     /// Call from processBlock -- syncs APVTS values to Faust zones, then computes
-    void process(juce::AudioBuffer<float>& buffer)
+    void process(juce::AudioBuffer<float>& buffer, int numInputChannels, int numOutputChannels)
     {
         const int numSamples = buffer.getNumSamples();
-        const int numChannels = buffer.getNumChannels();
+        resizeScratchBuffers(numSamples);
 
         // Sync APVTS -> Faust parameter zones (once per block)
-        dsp_.fHslider0 = *apvts_.getRawParameterValue(FaustParamIDs::mix);
-        dsp_.fHslider2 = *apvts_.getRawParameterValue(FaustParamIDs::decay);
-        dsp_.fHslider4 = *apvts_.getRawParameterValue(FaustParamIDs::preDelayMs);
-        dsp_.fHslider5 = *apvts_.getRawParameterValue(FaustParamIDs::diffusion);
-        dsp_.fHslider3 = *apvts_.getRawParameterValue(FaustParamIDs::damping);
-        dsp_.fHslider8 = *apvts_.getRawParameterValue(FaustParamIDs::lowDamp);
-        dsp_.fHslider7 = *apvts_.getRawParameterValue(FaustParamIDs::modRateHz);
-        dsp_.fHslider6 = *apvts_.getRawParameterValue(FaustParamIDs::modDepth);
-        dsp_.fHslider9 = *apvts_.getRawParameterValue(FaustParamIDs::lowCutHz);
-        dsp_.fHslider10 = *apvts_.getRawParameterValue(FaustParamIDs::highCutHz);
-        dsp_.fHslider1 = *apvts_.getRawParameterValue(FaustParamIDs::freeze);
+        dsp_.fHslider1 = *apvts_.getRawParameterValue(FaustParamIDs::mix);
+        dsp_.fHslider3 = *apvts_.getRawParameterValue(FaustParamIDs::decay);
+        dsp_.fHslider5 = *apvts_.getRawParameterValue(FaustParamIDs::preDelayMs);
+        dsp_.fHslider6 = *apvts_.getRawParameterValue(FaustParamIDs::diffusion);
+        dsp_.fHslider4 = *apvts_.getRawParameterValue(FaustParamIDs::damping);
+        dsp_.fHslider9 = *apvts_.getRawParameterValue(FaustParamIDs::lowDamp);
+        dsp_.fHslider8 = *apvts_.getRawParameterValue(FaustParamIDs::modRateHz);
+        dsp_.fHslider7 = *apvts_.getRawParameterValue(FaustParamIDs::modDepth);
+        dsp_.fHslider10 = *apvts_.getRawParameterValue(FaustParamIDs::lowCutHz);
+        dsp_.fHslider11 = *apvts_.getRawParameterValue(FaustParamIDs::highCutHz);
+        dsp_.fHslider2 = *apvts_.getRawParameterValue(FaustParamIDs::freeze);
         dsp_.fCheckbox0 = *apvts_.getRawParameterValue(FaustParamIDs::freezeOn) > 0.5f ? 1.0f : 0.0f;
-        dsp_.fHslider11 = *apvts_.getRawParameterValue(FaustParamIDs::saturation);
+        dsp_.fHslider12 = *apvts_.getRawParameterValue(FaustParamIDs::saturation);
+        dsp_.fHslider0 = *apvts_.getRawParameterValue(FaustParamIDs::inputGainDb);
+        dsp_.fHslider13 = *apvts_.getRawParameterValue(FaustParamIDs::outputGainDb);
 
-        // Set up channel pointers for Faust
-        // Faust expects separate input/output arrays; we process in-place.
-        float* channels[2];
-        for (int ch = 0; ch < std::min(numChannels, 2); ++ch)
-            channels[ch] = buffer.getWritePointer(ch);
+        for (int ch = 0; ch < 2; ++ch) {
+            auto* scratch = inputScratch_.getWritePointer(ch);
+            if (numInputChannels <= 0) {
+                juce::FloatVectorOperations::clear(scratch, numSamples);
+                continue;
+            }
 
-        dsp_.compute(numSamples, channels, channels);
+            const int sourceChannel = juce::jmin(ch, numInputChannels - 1);
+            juce::FloatVectorOperations::copy(scratch, buffer.getReadPointer(sourceChannel), numSamples);
+        }
+
+        float* inputChannels[2];
+        float* outputChannels[2];
+        for (int ch = 0; ch < 2; ++ch)
+            inputChannels[ch] = inputScratch_.getWritePointer(ch);
+        for (int ch = 0; ch < 2; ++ch)
+            outputChannels[ch] = outputScratch_.getWritePointer(ch);
+
+        dsp_.compute(numSamples, inputChannels, outputChannels);
+
+        for (int ch = 0; ch < juce::jmin(numOutputChannels, 2); ++ch)
+            buffer.copyFrom(ch, 0, outputScratch_.getReadPointer(ch), numSamples);
     }
 
     /// Access the underlying Faust DSP instance (for advanced use)
@@ -71,8 +89,21 @@ public:
     float getFreeze() const { return *apvts_.getRawParameterValue(FaustParamIDs::freeze); }
     bool getFreezeOn() const { return *apvts_.getRawParameterValue(FaustParamIDs::freezeOn) > 0.5f; }
     float getSaturation() const { return *apvts_.getRawParameterValue(FaustParamIDs::saturation); }
+    float getInputGainDb() const { return *apvts_.getRawParameterValue(FaustParamIDs::inputGainDb); }
+    float getOutputGainDb() const { return *apvts_.getRawParameterValue(FaustParamIDs::outputGainDb); }
 
 private:
+    void resizeScratchBuffers(int numSamples)
+    {
+        const int requiredSamples = juce::jmax(1, numSamples);
+        if (inputScratch_.getNumSamples() < requiredSamples)
+            inputScratch_.setSize(2, requiredSamples, false, false, true);
+        if (outputScratch_.getNumSamples() < requiredSamples)
+            outputScratch_.setSize(2, requiredSamples, false, false, true);
+    }
+
     TailwindDSP dsp_;
     juce::AudioProcessorValueTreeState& apvts_;
+    juce::AudioBuffer<float> inputScratch_;
+    juce::AudioBuffer<float> outputScratch_;
 };

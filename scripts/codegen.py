@@ -48,6 +48,32 @@ def label_to_pascal(label: str) -> str:
     return "".join(p.capitalize() for p in snake.split("_"))
 
 
+def get_meta_value(param: dict[str, Any], key: str) -> str | None:
+    """Return the first Faust metadata value for a key, if present."""
+    for meta_entry in param.get("meta", []):
+        if key in meta_entry:
+            return str(meta_entry[key])
+    return None
+
+
+def get_param_id(param: dict[str, Any]) -> str:
+    """Return the stable parameter ID, preferring explicit Faust metadata."""
+    explicit_id = get_meta_value(param, "id")
+    if explicit_id:
+        return label_to_param_id(explicit_id)
+    return label_to_param_id(param["label"])
+
+
+def param_id_to_camel(param_id: str) -> str:
+    """Convert a stable parameter ID to a camelCase C++ symbol."""
+    return label_to_camel(param_id)
+
+
+def param_id_to_pascal(param_id: str) -> str:
+    """Convert a stable parameter ID to a PascalCase C++ symbol."""
+    return label_to_pascal(param_id)
+
+
 # ---------------------------------------------------------------------------
 # JSON traversal: flatten nested UI groups into a flat param list
 # ---------------------------------------------------------------------------
@@ -265,14 +291,15 @@ def generate_params_h(params: list[dict[str, Any]], dsp_name: str) -> str:
     # Param ID constants
     id_lines = []
     for p in params:
-        camel = label_to_camel(p["label"])
-        pid = label_to_param_id(p["label"])
+        pid = get_param_id(p)
+        camel = param_id_to_camel(pid)
         id_lines.append(f'    static constexpr const char* {camel} = "{pid}";')
 
     # Param layout entries
     layout_lines = []
     for p in params:
-        camel = label_to_camel(p["label"])
+        pid = get_param_id(p)
+        camel = param_id_to_camel(pid)
         ptype = p["type"]
 
         if ptype == "checkbox" or ptype == "button":
@@ -325,27 +352,43 @@ public:
         : apvts_(apvts) {{}}
 
     /// Call from prepareToPlay
-    void prepare(double sampleRate, int /*samplesPerBlock*/)
+    void prepare(double sampleRate, int samplesPerBlock)
     {{
         dsp_.init(static_cast<int>(sampleRate));
+        resizeScratchBuffers(samplesPerBlock);
     }}
 
     /// Call from processBlock -- syncs APVTS values to Faust zones, then computes
-    void process(juce::AudioBuffer<float>& buffer)
+    void process(juce::AudioBuffer<float>& buffer, int numInputChannels, int numOutputChannels)
     {{
         const int numSamples = buffer.getNumSamples();
-        const int numChannels = buffer.getNumChannels();
+        resizeScratchBuffers(numSamples);
 
         // Sync APVTS -> Faust parameter zones (once per block)
 {sync_lines}
 
-        // Set up channel pointers for Faust
-        // Faust expects separate input/output arrays; we process in-place.
-        float* channels[{num_channels}];
-        for (int ch = 0; ch < std::min(numChannels, {num_channels}); ++ch)
-            channels[ch] = buffer.getWritePointer(ch);
+        for (int ch = 0; ch < {num_inputs}; ++ch) {{
+            auto* scratch = inputScratch_.getWritePointer(ch);
+            if (numInputChannels <= 0) {{
+                juce::FloatVectorOperations::clear(scratch, numSamples);
+                continue;
+            }}
 
-        dsp_.compute(numSamples, channels, channels);
+            const int sourceChannel = juce::jmin(ch, numInputChannels - 1);
+            juce::FloatVectorOperations::copy(scratch, buffer.getReadPointer(sourceChannel), numSamples);
+        }}
+
+        float* inputChannels[{num_inputs}];
+        float* outputChannels[{num_outputs}];
+        for (int ch = 0; ch < {num_inputs}; ++ch)
+            inputChannels[ch] = inputScratch_.getWritePointer(ch);
+        for (int ch = 0; ch < {num_outputs}; ++ch)
+            outputChannels[ch] = outputScratch_.getWritePointer(ch);
+
+        dsp_.compute(numSamples, inputChannels, outputChannels);
+
+        for (int ch = 0; ch < juce::jmin(numOutputChannels, {num_outputs}); ++ch)
+            buffer.copyFrom(ch, 0, outputScratch_.getReadPointer(ch), numSamples);
     }}
 
     /// Access the underlying Faust DSP instance (for advanced use)
@@ -358,8 +401,19 @@ public:
 {getter_methods}
 
 private:
+    void resizeScratchBuffers(int numSamples)
+    {{
+        const int requiredSamples = juce::jmax(1, numSamples);
+        if (inputScratch_.getNumSamples() < requiredSamples)
+            inputScratch_.setSize({num_inputs}, requiredSamples, false, false, true);
+        if (outputScratch_.getNumSamples() < requiredSamples)
+            outputScratch_.setSize({num_outputs}, requiredSamples, false, false, true);
+    }}
+
     {class_name} dsp_;
     juce::AudioProcessorValueTreeState& apvts_;
+    juce::AudioBuffer<float> inputScratch_;
+    juce::AudioBuffer<float> outputScratch_;
 }};
 """
 
@@ -372,12 +426,11 @@ def generate_bridge_h(
     num_outputs: int = 2,
 ) -> str:
     """Generate FaustBridge.h content."""
-    num_channels = max(num_inputs, num_outputs)
-
     # Sync lines: APVTS -> Faust zone
     sync_lines = []
     for p in params:
-        camel = label_to_camel(p["label"])
+        pid = get_param_id(p)
+        camel = param_id_to_camel(pid)
         varname = p["varname"]  # e.g. "fHslider0", "fCheckbox0"
         ptype = p["type"]
 
@@ -393,8 +446,9 @@ def generate_bridge_h(
     # Getter methods
     getter_lines = []
     for p in params:
-        camel = label_to_camel(p["label"])
-        pascal = label_to_pascal(p["label"])
+        pid = get_param_id(p)
+        camel = param_id_to_camel(pid)
+        pascal = param_id_to_pascal(pid)
         ptype = p["type"]
 
         if ptype == "checkbox" or ptype == "button":
@@ -409,7 +463,8 @@ def generate_bridge_h(
     return BRIDGE_HEADER.format(
         dsp_name=dsp_name,
         class_name=class_name,
-        num_channels=num_channels,
+        num_inputs=num_inputs,
+        num_outputs=num_outputs,
         sync_lines="\n".join(sync_lines),
         getter_methods="\n".join(getter_lines),
     )
@@ -475,7 +530,7 @@ def main():
         f"[codegen] Found {len(params)} parameters, {num_inputs} inputs, {num_outputs} outputs"
     )
     for p in params:
-        pid = label_to_param_id(p["label"])
+        pid = get_param_id(p)
         print(f"  [{get_sort_key(p)}] {p['label']:20s} -> {pid:20s} ({p['varname']})")
 
     # Step 3: Generate FaustDefs.h (minimal stubs for Faust types)

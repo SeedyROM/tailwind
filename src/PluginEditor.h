@@ -16,7 +16,10 @@ public:
   void paint(juce::Graphics &) override;
   void resized() override;
 
-private:
+ private:
+  static constexpr int minEditorWidth = 760;
+  static constexpr int minEditorHeight = 520;
+
   // Custom look and feel
   TailwindLookAndFeel tailwindLnf;
 
@@ -43,6 +46,10 @@ private:
   RotaryKnob saturationKnob;
   RotaryKnob freezeKnob;
   FreezeButton freezeOnBtn;
+
+  // --- GAIN STAGING section ---
+  RotaryKnob inputGainKnob;
+  RotaryKnob outputGainKnob;
 
   // Helpers
   void drawSectionPanel(juce::Graphics &g, juce::Rectangle<int> bounds,

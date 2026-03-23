@@ -18,7 +18,7 @@ The output is 4 header files in `src/dsp/generated/`:
 | `FaustParams.h` | APVTS `ParameterLayout` + string constant parameter IDs, derived from Faust metadata |
 | `FaustBridge.h` | Bridge class that syncs APVTS parameter values to Faust's internal zones each audio block |
 
-These files are committed to git. **You do not need Faust installed to build the plugin.** Faust is only needed when you want to change the DSP.
+These files are committed to git. **You do not need Faust installed for normal plugin builds.** Faust is only needed when you want to change the DSP and regenerate the committed outputs.
 
 ## How It Works
 
@@ -55,7 +55,7 @@ python3 scripts/codegen.py dsp/tailwind_reverb.dsp --output src/dsp/generated
 
 ### Automatic Trigger
 
-When `TAILWIND_ENABLE_CODEGEN=ON` (the default), CMake registers a custom command that re-runs codegen whenever `dsp/tailwind_reverb.dsp` or `scripts/codegen.py` changes. So during normal development, just edit the `.dsp` and rebuild -- codegen runs automatically.
+When `TAILWIND_ENABLE_CODEGEN=ON`, CMake registers a custom command that re-runs codegen whenever `dsp/tailwind_reverb.dsp` or `scripts/codegen.py` changes. Use that mode intentionally when editing the DSP.
 
 If Faust isn't installed, CMake falls back to the committed generated files silently.
 
@@ -90,7 +90,7 @@ After Faust generates `FaustDSP.h`, codegen.py does two fixups:
 
 1. Edit `dsp/tailwind_reverb.dsp`
 2. Test in the [Faust IDE](https://faustide.grame.fr/) if you want quick feedback
-3. Run `just codegen` (or just rebuild -- CMake triggers it automatically)
+3. Run `just codegen` or `just build-codegen`
 4. Build and test the plugin
 5. Commit the updated generated files along with your `.dsp` changes
 

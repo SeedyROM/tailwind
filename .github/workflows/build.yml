@@ -67,6 +67,8 @@ jobs:
             cmake_args: >-
               -DTAILWIND_FORMATS="VST3 Standalone"
             artifact_name: Tailwind-Linux
+            pluginval_asset: pluginval_Linux.zip
+            pluginval_binary: pluginval
             artifact_paths: |
               build/Tailwind_artefacts/Release/VST3
               build/Tailwind_artefacts/Release/Standalone
@@ -81,6 +83,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
+            gh \
             libasound2-dev \
             libx11-dev \
             libxcomposite-dev \
@@ -117,6 +120,30 @@ jobs:
 
       - name: Build
         run: cmake --build build --config ${{ env.BUILD_TYPE }} --parallel
+
+      - name: Download pluginval
+        if: matrix.pluginval_asset != ''
+        run: gh release download v1.0.4 --repo Tracktion/pluginval --pattern "${{ matrix.pluginval_asset }}" --dir pluginval
+
+      - name: Unpack pluginval
+        if: matrix.pluginval_asset != ''
+        run: |
+          python3 - <<'PY'
+          import pathlib
+          import zipfile
+
+          archive = next(pathlib.Path("pluginval").glob("*.zip"))
+          with zipfile.ZipFile(archive) as zf:
+              zf.extractall("pluginval")
+          PY
+
+      - name: Validate VST3 with pluginval
+        if: matrix.pluginval_asset != ''
+        env:
+          DISPLAY: ':99'
+        run: |
+          chmod +x pluginval/${{ matrix.pluginval_binary }}
+          xvfb-run -a pluginval/${{ matrix.pluginval_binary }} --strictness-level 5 --validate-in-process --skip-gui-tests build/Tailwind_artefacts/Release/VST3/Tailwind.vst3
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v7

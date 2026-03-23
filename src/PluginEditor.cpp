@@ -22,7 +22,10 @@ TailwindAudioProcessorEditor::TailwindAudioProcessorEditor(
       saturationKnob(p.apvts, FaustParamIDs::saturation, "SATURATION", " %",
                      true),
       freezeKnob(p.apvts, FaustParamIDs::freeze, "FREEZE", " %", true),
-      freezeOnBtn(p.apvts, FaustParamIDs::freezeOn) {
+      freezeOnBtn(p.apvts, FaustParamIDs::freezeOn),
+      // GAIN STAGING
+      inputGainKnob(p.apvts, FaustParamIDs::inputGainDb, "INPUT", " dB"),
+      outputGainKnob(p.apvts, FaustParamIDs::outputGainDb, "OUTPUT", " dB") {
 
   // Apply custom look and feel
   setLookAndFeel(&tailwindLnf);
@@ -51,7 +54,13 @@ TailwindAudioProcessorEditor::TailwindAudioProcessorEditor(
   addAndMakeVisible(freezeKnob);
   addAndMakeVisible(freezeOnBtn);
 
-  setSize(820, 520);
+  // Gain staging section knobs
+  addAndMakeVisible(inputGainKnob);
+  addAndMakeVisible(outputGainKnob);
+
+  setResizable(true, true);
+  setResizeLimits(minEditorWidth, minEditorHeight, 1280, 780);
+  setSize(900, 560);
 }
 
 TailwindAudioProcessorEditor::~TailwindAudioProcessorEditor() {
@@ -67,7 +76,8 @@ void TailwindAudioProcessorEditor::paint(juce::Graphics &g) {
   bounds.removeFromTop(50); // topBar
   bounds.reduce(12, 8);
 
-  const int topRowHeight = 280;
+  const int topRowHeight =
+      juce::jlimit(280, 420, (bounds.getHeight() * 2) / 3);
   const int bottomRowHeight = bounds.getHeight() - topRowHeight - 8;
 
   auto topRow = bounds.removeFromTop(topRowHeight);
@@ -75,19 +85,27 @@ void TailwindAudioProcessorEditor::paint(juce::Graphics &g) {
   auto bottomRow = bounds.removeFromTop(bottomRowHeight);
 
   // Top row: MAIN (4 knobs), TONE (4 knobs), MODULATION (2 knobs)
-  const int mainW = 320;
-  const int toneW = 320;
+  const int sectionGap = 8;
+  const int mainW = (topRow.getWidth() - sectionGap * 2) * 2 / 5;
+  const int toneW = (topRow.getWidth() - sectionGap * 2) * 2 / 5;
   auto mainBounds = topRow.removeFromLeft(mainW);
-  topRow.removeFromLeft(8);
+  topRow.removeFromLeft(sectionGap);
   auto toneBounds = topRow.removeFromLeft(toneW);
-  topRow.removeFromLeft(8);
+  topRow.removeFromLeft(sectionGap);
   auto modBounds = topRow;
 
   // Draw section panels
   drawSectionPanel(g, mainBounds, "MAIN");
   drawSectionPanel(g, toneBounds, "TONE");
   drawSectionPanel(g, modBounds, "MODULATION");
-  drawSectionPanel(g, bottomRow, "CHARACTER");
+  const int lowerGap = 8;
+  const int characterWidth = (bottomRow.getWidth() - lowerGap) * 3 / 5;
+  auto characterBounds = bottomRow.removeFromLeft(characterWidth);
+  bottomRow.removeFromLeft(lowerGap);
+  auto gainBounds = bottomRow;
+
+  drawSectionPanel(g, characterBounds, "CHARACTER");
+  drawSectionPanel(g, gainBounds, "GAIN STAGING");
 }
 
 void TailwindAudioProcessorEditor::resized() {
@@ -99,7 +117,8 @@ void TailwindAudioProcessorEditor::resized() {
   // Content area with padding
   bounds.reduce(12, 8);
 
-  const int topRowHeight = 280;
+  const int topRowHeight =
+      juce::jlimit(280, 420, (bounds.getHeight() * 2) / 3);
   const int bottomRowHeight = bounds.getHeight() - topRowHeight - 8;
 
   auto topRow = bounds.removeFromTop(topRowHeight);
@@ -107,14 +126,22 @@ void TailwindAudioProcessorEditor::resized() {
   auto bottomRow = bounds.removeFromTop(bottomRowHeight);
 
   // ---- Top row section widths ----
-  const int mainW = 320;
-  const int toneW = 320;
+  const int sectionGap = 8;
+  const int topRowContentWidth = topRow.getWidth() - sectionGap * 2;
+  const int mainW = topRowContentWidth * 2 / 5;
+  const int toneW = topRowContentWidth * 2 / 5;
 
   auto mainBounds = topRow.removeFromLeft(mainW);
-  topRow.removeFromLeft(8);
+  topRow.removeFromLeft(sectionGap);
   auto toneBounds = topRow.removeFromLeft(toneW);
-  topRow.removeFromLeft(8);
+  topRow.removeFromLeft(sectionGap);
   auto modBounds = topRow;
+
+  const int lowerGap = 8;
+  const int characterWidth = (bottomRow.getWidth() - lowerGap) * 3 / 5;
+  auto characterBounds = bottomRow.removeFromLeft(characterWidth);
+  bottomRow.removeFromLeft(lowerGap);
+  auto gainBounds = bottomRow;
 
   // ---- MAIN section (2x2 grid) ----
   {
@@ -175,29 +202,49 @@ void TailwindAudioProcessorEditor::resized() {
 
   // ---- CHARACTER section (horizontal) ----
   {
-    auto area = bottomRow.reduced(8);
+    auto area = characterBounds.reduced(8);
     area.removeFromTop(24);
 
-    const int knobW = 140;
-    const int freezeBtnW = 120;
-    const int totalW = knobW * 2 + freezeBtnW + 24; // 24px total gap
-    const int startX = area.getX() + (area.getWidth() - totalW) / 2;
+    const int contentHeight = juce::jmin(220, area.getHeight());
+    area.setHeight(contentHeight);
 
-    auto centred = area;
-    centred.setX(startX);
-    centred.setWidth(totalW);
+    const int sidePadding = 12;
+    const int availableWidth = juce::jmax(0, area.getWidth() - sidePadding * 2);
+    const int freezeBtnW = juce::jlimit(100, 160, availableWidth / 3);
+    const int knobW = juce::jlimit(96, 160, juce::jmin(availableWidth / 3, availableWidth - freezeBtnW));
 
-    saturationKnob.setBounds(centred.removeFromLeft(knobW));
-    centred.removeFromLeft(12);
-    freezeKnob.setBounds(centred.removeFromLeft(knobW));
-    centred.removeFromLeft(12);
+    auto contentArea = area.reduced(sidePadding, 0);
+    auto leftKnobArea = contentArea.removeFromLeft(knobW);
+    auto rightButtonArea = contentArea.removeFromRight(freezeBtnW);
+    auto centreArea = contentArea;
+
+    saturationKnob.setBounds(leftKnobArea);
+
+    auto freezeKnobArea = centreArea.withSizeKeepingCentre(knobW, contentHeight);
+    freezeKnob.setBounds(freezeKnobArea);
 
     // Centre the freeze button vertically in remaining space
-    auto btnArea = centred;
+    auto btnArea = rightButtonArea;
     const int btnH = 36;
     btnArea.setY(btnArea.getY() + (btnArea.getHeight() - btnH) / 2);
     btnArea.setHeight(btnH);
     freezeOnBtn.setBounds(btnArea);
+  }
+
+  // ---- GAIN STAGING section (2x1 vertical) ----
+  {
+    auto area = gainBounds.reduced(8);
+    area.removeFromTop(24);
+
+    const int contentHeight = juce::jmin(180, area.getHeight());
+    area.setHeight(contentHeight);
+
+    const int hGap = 12;
+    const int knobW = (area.getWidth() - hGap) / 2;
+
+    inputGainKnob.setBounds(area.removeFromLeft(knobW));
+    area.removeFromLeft(hGap);
+    outputGainKnob.setBounds(area);
   }
 }
 

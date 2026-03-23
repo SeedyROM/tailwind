@@ -4,7 +4,7 @@ BigSky-inspired long tail reverb plugin.
 
 [![Build](https://github.com/SeedyROM/tailwind/actions/workflows/build.yml/badge.svg)](https://github.com/SeedyROM/tailwind/actions/workflows/build.yml)
 
-Tailwind is a stereo algorithmic reverb built around an 8x8 Feedback Delay Network with Hadamard mixing, Zita-Rev1-style frequency-dependent damping, LFO-modulated tank delay lines, input diffusers, and a freeze mode. The DSP is written in [Faust](https://faust.grame.fr/) and the UI is built with [JUCE](https://juce.com/).
+Tailwind is a stereo-output algorithmic reverb built around an 8x8 Feedback Delay Network with Hadamard mixing, Zita-Rev1-style frequency-dependent damping, LFO-modulated tank delay lines, input diffusers, and a freeze mode. It accepts mono or stereo input and always produces stereo output. The DSP is written in [Faust](https://faust.grame.fr/) and the UI is built with [JUCE](https://juce.com/).
 
 ## Platforms & Formats
 
@@ -32,7 +32,7 @@ See [docs/building.md](docs/building.md) for platform-specific prerequisites, CM
 
 ## Faust DSP
 
-The reverb DSP lives in `dsp/tailwind_reverb.dsp`. A codegen script compiles the Faust source to C++ and generates a bridge layer that maps Faust parameters to JUCE's `AudioProcessorValueTreeState`. The generated files are committed to git, so you don't need Faust installed to build the plugin.
+The reverb DSP lives in `dsp/tailwind_reverb.dsp`. A codegen script compiles the Faust source to C++ and generates a bridge layer that maps Faust parameters to JUCE's `AudioProcessorValueTreeState`. The generated files are committed to git, so you don't need Faust installed for normal builds; Faust is only required when you intentionally regenerate the DSP outputs.
 
 See [docs/faust-codegen.md](docs/faust-codegen.md) for details on the codegen pipeline and how to modify the DSP.
 

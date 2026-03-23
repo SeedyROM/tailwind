@@ -23,6 +23,8 @@ namespace FaustParamIDs {
     static constexpr const char* freeze = "freeze";
     static constexpr const char* freezeOn = "freeze_on";
     static constexpr const char* saturation = "saturation";
+    static constexpr const char* inputGainDb = "input_gain_db";
+    static constexpr const char* outputGainDb = "output_gain_db";
 } // namespace FaustParamIDs
 
 // --------------------------------------------------------------------------
@@ -98,6 +100,16 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
         "Saturation",
         juce::NormalisableRange<float>(0.0f, 0.25f, 0.01f),
         0.125f));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{FaustParamIDs::inputGainDb, 1},
+        "Input Gain",
+        juce::NormalisableRange<float>(-24.0f, 24.0f, 0.1f),
+        0.0f));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{FaustParamIDs::outputGainDb, 1},
+        "Output Gain",
+        juce::NormalisableRange<float>(-24.0f, 24.0f, 0.1f),
+        0.0f));
     return { params.begin(), params.end() };
 }
 

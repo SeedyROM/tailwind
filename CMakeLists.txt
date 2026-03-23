@@ -8,20 +8,20 @@ set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS ON CACHE INTERNAL "")
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# VST2 SDK Path - must be set BEFORE fetching JUCE
-set(VST2_SDK_PATH "${CMAKE_CURRENT_SOURCE_DIR}/external/vst-2.4-sdk/vstsdk2.4" CACHE PATH "Path to VST2 SDK")
-
 # CI-friendly options
 option(TAILWIND_COPY_AFTER_BUILD "Copy plugin to system dirs after build" ON)
 option(TAILWIND_USE_MARCH_NATIVE "Use -march=native (disable for distributable builds)" ON)
 option(TAILWIND_ENABLE_CODEGEN "Run Faust codegen (requires faust on PATH)" ON)
-set(TAILWIND_FORMATS "VST VST3 AU Standalone" CACHE STRING "Plugin formats to build")
+option(TAILWIND_ENABLE_VST2 "Enable legacy VST2 builds when the SDK is available" OFF)
+set(TAILWIND_FORMATS "VST3 AU Standalone" CACHE STRING "Space-separated list of plugin formats to build")
 
-if(EXISTS "${VST2_SDK_PATH}/pluginterfaces/vst2.x/aeffect.h")
-    message(STATUS "VST2 SDK found at: ${VST2_SDK_PATH}")
-else()
-    message(WARNING "VST2 SDK not found at: ${VST2_SDK_PATH}")
-    message(WARNING "Run: git submodule update --init --recursive")
+if(TAILWIND_ENABLE_VST2)
+    set(VST2_SDK_PATH "${CMAKE_CURRENT_SOURCE_DIR}/external/vst-2.4-sdk/vstsdk2.4" CACHE PATH "Path to VST2 SDK")
+    if(EXISTS "${VST2_SDK_PATH}/pluginterfaces/vst2.x/aeffect.h")
+        message(STATUS "VST2 SDK found at: ${VST2_SDK_PATH}")
+    else()
+        message(FATAL_ERROR "TAILWIND_ENABLE_VST2=ON but the VST2 SDK was not found at: ${VST2_SDK_PATH}")
+    endif()
 endif()
 
 # Fetch JUCE from GitHub (release archive — fast, no git overhead)
@@ -33,7 +33,7 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(JUCE)
 
 # Set VST2 SDK path for JUCE (must be after FetchContent_MakeAvailable)
-if(EXISTS "${VST2_SDK_PATH}/pluginterfaces/vst2.x/aeffect.h")
+if(TAILWIND_ENABLE_VST2)
     juce_set_vst2_sdk_path("${VST2_SDK_PATH}")
 endif()
 
@@ -84,6 +84,12 @@ endif()
 
 # Convert TAILWIND_FORMATS string to a list for juce_add_plugin
 separate_arguments(TAILWIND_FORMATS_LIST UNIX_COMMAND "${TAILWIND_FORMATS}")
+
+if(NOT TAILWIND_ENABLE_VST2)
+    list(REMOVE_ITEM TAILWIND_FORMATS_LIST VST)
+endif()
+
+list(REMOVE_DUPLICATES TAILWIND_FORMATS_LIST)
 
 # Define the plugin
 juce_add_plugin(Tailwind

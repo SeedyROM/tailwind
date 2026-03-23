@@ -57,7 +57,8 @@ JUCE 7.0.12 is fetched automatically via CMake `FetchContent` from a release arc
 | `TAILWIND_COPY_AFTER_BUILD` | `ON` | Copy built plugins to system plugin directories |
 | `TAILWIND_USE_MARCH_NATIVE` | `ON` | Use `-march=native` for local builds (AVX2/FMA on x86) |
 | `TAILWIND_ENABLE_CODEGEN` | `ON` | Run Faust codegen when `.dsp` changes (requires `faust` on PATH) |
-| `TAILWIND_FORMATS` | `"VST VST3 AU Standalone"` | Space-separated list of plugin formats to build |
+| `TAILWIND_ENABLE_VST2` | `OFF` | Enable legacy VST2 builds if you have a private SDK checkout |
+| `TAILWIND_FORMATS` | `"VST3 AU Standalone"` | Space-separated list of plugin formats to build |
 
 Example -- release build without copying to system dirs:
 
@@ -75,7 +76,11 @@ git submodule add https://github.com/sysfce2/vst-2.4-sdk.git external/vst-2.4-sd
 git submodule update --init --recursive
 ```
 
-The build system detects the SDK automatically and enables VST2 if found.
+Enable it explicitly:
+
+```bash
+cmake -B build -G Ninja -DTAILWIND_ENABLE_VST2=ON -DTAILWIND_FORMATS="VST VST3 AU Standalone"
+```
 
 ## DSP Optimization
 
@@ -104,6 +109,7 @@ CI uses conservative settings for portable binaries:
 - `TAILWIND_USE_MARCH_NATIVE=OFF` -- SSE4.2 baseline instead of AVX2
 - `TAILWIND_COPY_AFTER_BUILD=OFF` -- no system install
 - `TAILWIND_ENABLE_CODEGEN=OFF` -- uses committed generated files, no Faust compiler needed
+- Linux CI also runs `pluginval` against the built VST3 artifact as a smoke-level validation pass
 
 When a `v*` tag is pushed, the release job zips all platform artifacts and creates a draft GitHub Release.
 
@@ -126,8 +132,10 @@ Run `just --list` for the full list. Key recipes:
 | Recipe | Description |
 |---|---|
 | `just codegen` | Run Faust codegen |
-| `just configure` | CMake configure (runs codegen first) |
+| `just configure` | CMake configure using committed generated files |
+| `just configure-codegen` | Configure with explicit Faust codegen enabled |
 | `just build` | Debug build |
+| `just build-codegen` | Debug build after regenerating Faust outputs |
 | `just release` | Release build |
 | `just run` | Launch standalone app |
 | `just element` | Build and reload in Element |

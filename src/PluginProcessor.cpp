@@ -1,6 +1,8 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
+#include <cmath>
+
 TailwindAudioProcessor::TailwindAudioProcessor()
     : AudioProcessor(
           BusesProperties()
@@ -21,7 +23,34 @@ bool TailwindAudioProcessor::producesMidi() const { return false; }
 
 bool TailwindAudioProcessor::isMidiEffect() const { return false; }
 
-double TailwindAudioProcessor::getTailLengthSeconds() const { return 0.0; }
+double TailwindAudioProcessor::getTailLengthSeconds() const {
+  constexpr double minDecay = 0.1;
+  constexpr double maxDecay = 0.99;
+  constexpr double minT60Seconds = 0.2;
+  constexpr double maxT60Seconds = 30.0;
+  constexpr double freezeTailSeconds = 60.0;
+
+  const auto freezeOn = apvts.getRawParameterValue(FaustParamIDs::freezeOn);
+  if (freezeOn != nullptr && *freezeOn > 0.5f)
+    return freezeTailSeconds;
+
+  const auto decayParam = apvts.getRawParameterValue(FaustParamIDs::decay);
+  const auto predelayParam = apvts.getRawParameterValue(FaustParamIDs::preDelayMs);
+
+  const auto decay = juce::jlimit(
+      static_cast<float>(minDecay), static_cast<float>(maxDecay),
+      decayParam != nullptr ? decayParam->load() : 0.85f);
+  const auto predelayMs = juce::jlimit(
+      0.0f, 500.0f,
+      predelayParam != nullptr ? predelayParam->load() : 20.0f);
+
+  const auto normalizedDecay = (decay - static_cast<float>(minDecay)) /
+                               static_cast<float>(maxDecay - minDecay);
+  const auto t60Seconds =
+      minT60Seconds * std::pow(maxT60Seconds / minT60Seconds, normalizedDecay);
+
+  return (predelayMs / 1000.0) + t60Seconds;
+}
 
 int TailwindAudioProcessor::getNumPrograms() { return 1; }
 
@@ -52,11 +81,14 @@ void TailwindAudioProcessor::releaseResources() {
 
 bool TailwindAudioProcessor::isBusesLayoutSupported(
     const BusesLayout &layouts) const {
-  if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono() &&
-      layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
+  const auto mainInput = layouts.getMainInputChannelSet();
+  const auto mainOutput = layouts.getMainOutputChannelSet();
+
+  if (mainOutput != juce::AudioChannelSet::stereo())
     return false;
 
-  if (layouts.getMainOutputChannelSet() != layouts.getMainInputChannelSet())
+  if (mainInput != juce::AudioChannelSet::mono() &&
+      mainInput != juce::AudioChannelSet::stereo())
     return false;
 
   return true;
@@ -67,14 +99,14 @@ void TailwindAudioProcessor::processBlock(juce::AudioBuffer<float> &buffer,
   juce::ignoreUnused(midiMessages);
   juce::ScopedNoDenormals noDenormals;
 
-  auto totalNumInputChannels = getTotalNumInputChannels();
-  auto totalNumOutputChannels = getTotalNumOutputChannels();
+  const auto totalNumInputChannels = getTotalNumInputChannels();
+  const auto totalNumOutputChannels = getTotalNumOutputChannels();
 
   // Clear any output channels that don't have input
   for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
     buffer.clear(i, 0, buffer.getNumSamples());
 
-  faustBridge.process(buffer);
+  faustBridge.process(buffer, totalNumInputChannels, totalNumOutputChannels);
 }
 
 bool TailwindAudioProcessor::hasEditor() const { return true; }
