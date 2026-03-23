@@ -4,6 +4,8 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include <functional>
+
 /**
  * Self-contained rotary knob component with:
  * - Label above
@@ -20,12 +22,19 @@ public:
   ~RotaryKnob() override = default;
 
   void resized() override;
+  void setMeterSource(std::function<float()> meterSource,
+                      bool meterColourValueText = true);
+  void refreshMeter();
 
   juce::Slider &getSlider() { return slider; }
 
 private:
   juce::Slider slider;
   juce::Label label;
+  juce::Label *valueLabel = nullptr;
+  std::function<float()> meterSource;
+  float meterPeak = 0.0f;
+  bool meterColourValueText = false;
   std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>
       attachment;
 

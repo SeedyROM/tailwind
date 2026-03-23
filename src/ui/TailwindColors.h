@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cmath>
+
 #include <juce_gui_basics/juce_gui_basics.h>
 
 /**
@@ -45,5 +47,30 @@ inline constexpr juce::uint32 freezeGlow =
 // ---- Accent ----
 inline constexpr juce::uint32 accentWarm = 0xffd4874d;   // Primary warm accent
 inline constexpr juce::uint32 accentBright = 0xffe8a96a; // Bright warm accent
+
+// ---- Metering ----
+inline constexpr juce::uint32 meterGreen = 0xff7dc96b;
+inline constexpr juce::uint32 meterYellow = 0xffe6cf63;
+inline constexpr juce::uint32 meterOrange = 0xffe39a57;
+inline constexpr juce::uint32 meterRed = 0xffd85c4b;
+
+inline float peakToMeterDb(float peak) {
+  return 20.0f * std::log10(juce::jmax(peak, 1.0e-6f));
+}
+
+inline float peakToMeterNormalised(float peak) {
+  return juce::jlimit(0.0f, 1.0f, (peakToMeterDb(peak) + 60.0f) / 60.0f);
+}
+
+inline juce::Colour meterColourForPeak(float peak) {
+  const auto db = peakToMeterDb(peak);
+  if (db >= -3.0f)
+    return juce::Colour(meterRed);
+  if (db >= -9.0f)
+    return juce::Colour(meterOrange);
+  if (db >= -18.0f)
+    return juce::Colour(meterYellow);
+  return juce::Colour(meterGreen);
+}
 
 } // namespace TailwindColors

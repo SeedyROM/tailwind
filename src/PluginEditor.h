@@ -8,7 +8,8 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 
-class TailwindAudioProcessorEditor : public juce::AudioProcessorEditor {
+class TailwindAudioProcessorEditor : public juce::AudioProcessorEditor,
+                                     private juce::Timer {
 public:
   TailwindAudioProcessorEditor(TailwindAudioProcessor &);
   ~TailwindAudioProcessorEditor() override;
@@ -17,6 +18,8 @@ public:
   void resized() override;
 
  private:
+  void timerCallback() override;
+
   static constexpr int minEditorWidth = 760;
   static constexpr int minEditorHeight = 520;
 

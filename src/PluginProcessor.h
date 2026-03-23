@@ -3,6 +3,8 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_dsp/juce_dsp.h>
 
+#include <atomic>
+
 #include "FaustBridge.h"
 
 class TailwindAudioProcessor : public juce::AudioProcessor {
@@ -41,9 +43,17 @@ public:
 
   // Public access to the bridge for the editor (e.g. for reading param values)
   FaustBridge &getFaustBridge() { return faustBridge; }
+  float getInputMeterPeak() const { return inputMeterPeak.load(); }
+  float getOutputMeterPeak() const { return outputMeterPeak.load(); }
 
 private:
+  void updatePeakMeter(std::atomic<float> &meterState, float blockPeak,
+                       int numSamples) noexcept;
+
   FaustBridge faustBridge;
+  std::atomic<float> inputMeterPeak{0.0f};
+  std::atomic<float> outputMeterPeak{0.0f};
+  double currentSampleRate = 44100.0;
 
   JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(TailwindAudioProcessor)
 };

@@ -56,7 +56,7 @@ setup: submodules rebuild
 # Launch the standalone plugin
 run *flags:
     just build_type={{build_type}} tailwind_formats="{{tailwind_formats}}" tailwind_enable_vst2={{tailwind_enable_vst2}} tailwind_copy_after_build={{tailwind_copy_after_build}} tailwind_enable_codegen={{tailwind_enable_codegen}} build {{flags}}
-    open {{build_dir}}/Tailwind_artefacts/Standalone/Tailwind.app
+    open {{build_dir}}/Tailwind_artefacts/{{build_type}}/Standalone/Tailwind.app
 
 # Build and reload in Element.app
 element *flags:

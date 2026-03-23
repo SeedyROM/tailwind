@@ -28,6 +28,8 @@ public:
   // Slider text box (value readout with rounded border)
   juce::Label *createSliderTextBox(juce::Slider &slider) override;
 
+  juce::Slider::SliderLayout getSliderLayout(juce::Slider &slider) override;
+
 private:
   JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(TailwindLookAndFeel)
 };

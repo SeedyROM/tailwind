@@ -2,6 +2,35 @@
 #include "TailwindColors.h"
 #include <cmath>
 
+namespace {
+
+class TailwindSliderLabel : public juce::Label {
+public:
+  void editorShown(juce::TextEditor *editor) override {
+    juce::Label::editorShown(editor);
+
+    if (editor == nullptr)
+      return;
+
+    editor->setJustification(juce::Justification::centred);
+    editor->setSelectAllWhenFocused(false);
+    editor->applyColourToAllText(findColour(juce::TextEditor::textColourId));
+    editor->setColour(juce::TextEditor::backgroundColourId,
+                      juce::Colour(0xff222020));
+    editor->setColour(juce::TextEditor::outlineColourId,
+                      juce::Colour(TailwindColors::panelBorder));
+    editor->setColour(juce::TextEditor::highlightColourId,
+                      juce::Colour(0x00000000));
+    editor->setColour(juce::TextEditor::highlightedTextColourId,
+                      findColour(juce::TextEditor::textColourId));
+    editor->setCaretPosition(editor->getTotalNumChars());
+    editor->setHighlightedRegion({editor->getCaretPosition(),
+                                  editor->getCaretPosition()});
+  }
+};
+
+} // namespace
+
 TailwindLookAndFeel::TailwindLookAndFeel() {
   // Global colour overrides
   setColour(juce::Slider::textBoxTextColourId,
@@ -27,7 +56,7 @@ TailwindLookAndFeel::TailwindLookAndFeel() {
 
 void TailwindLookAndFeel::drawRotarySlider(
     juce::Graphics &g, int x, int y, int width, int height, float sliderPos,
-    float rotaryStartAngle, float rotaryEndAngle, juce::Slider & /*slider*/) {
+    float rotaryStartAngle, float rotaryEndAngle, juce::Slider &slider) {
   // Geometry
   const float diameter =
       (static_cast<float>(juce::jmin(width, height)) - 10.0f) * 0.82f;
@@ -41,6 +70,39 @@ void TailwindLookAndFeel::drawRotarySlider(
 
   const float angle =
       rotaryStartAngle + sliderPos * (rotaryEndAngle - rotaryStartAngle);
+
+  const auto meterPeak =
+      static_cast<float>(slider.getProperties()["tailwindMeterPeak"]);
+  const auto showMeter =
+      static_cast<bool>(slider.getProperties()["tailwindShowMeter"]);
+  const auto meterPos = TailwindColors::peakToMeterNormalised(meterPeak);
+  const auto meterAngle =
+      rotaryStartAngle + meterPos * (rotaryEndAngle - rotaryStartAngle);
+
+  if (showMeter) {
+    const float meterArcRadius = radius + 10.0f;
+    const float meterArcThickness = 2.5f;
+
+    juce::Path meterArcBg;
+    meterArcBg.addCentredArc(centreX, centreY, meterArcRadius, meterArcRadius,
+                             0.0f, rotaryStartAngle, rotaryEndAngle, true);
+    g.setColour(juce::Colour(TailwindColors::knobTrackBg).brighter(0.1f));
+    g.strokePath(meterArcBg,
+                 juce::PathStrokeType(meterArcThickness,
+                                      juce::PathStrokeType::curved,
+                                      juce::PathStrokeType::rounded));
+
+    if (meterPos > 0.0f) {
+      juce::Path meterArc;
+      meterArc.addCentredArc(centreX, centreY, meterArcRadius, meterArcRadius,
+                             0.0f, rotaryStartAngle, meterAngle, true);
+      g.setColour(TailwindColors::meterColourForPeak(meterPeak));
+      g.strokePath(meterArc,
+                   juce::PathStrokeType(meterArcThickness,
+                                        juce::PathStrokeType::curved,
+                                        juce::PathStrokeType::rounded));
+    }
+  }
 
   // ---- Arc track (background) ----
   const float arcRadius = radius + 4.0f;
@@ -198,7 +260,12 @@ void TailwindLookAndFeel::drawLabel(juce::Graphics &g, juce::Label &label) {
 }
 
 juce::Label *TailwindLookAndFeel::createSliderTextBox(juce::Slider &slider) {
-  auto *label = LookAndFeel_V4::createSliderTextBox(slider);
+  juce::ignoreUnused(slider);
+
+  auto *label = new TailwindSliderLabel();
+  label->setJustificationType(juce::Justification::centred);
+  label->setEditable(false, true, false);
+  label->setBorderSize(juce::BorderSize<int>(0));
 
   label->setColour(juce::Label::textColourId,
                    juce::Colour(TailwindColors::valueText));
@@ -211,8 +278,26 @@ juce::Label *TailwindLookAndFeel::createSliderTextBox(juce::Slider &slider) {
                    juce::Colour(0xff222020));
   label->setColour(juce::TextEditor::outlineColourId,
                    juce::Colour(TailwindColors::panelBorder));
+  label->setColour(juce::TextEditor::highlightColourId,
+                   juce::Colour(0x00000000));
+  label->setColour(juce::TextEditor::highlightedTextColourId,
+                   juce::Colour(TailwindColors::valueText));
   label->setColour(juce::TextEditor::textColourId,
                    juce::Colour(TailwindColors::valueText));
 
   return label;
+}
+
+juce::Slider::SliderLayout
+TailwindLookAndFeel::getSliderLayout(juce::Slider &slider) {
+  auto layout = LookAndFeel_V4::getSliderLayout(slider);
+
+  if (slider.isBar())
+    return layout;
+
+  auto bounds = slider.getLocalBounds();
+  layout.sliderBounds = bounds.withTrimmedTop(6).withTrimmedBottom(28);
+  layout.textBoxBounds = juce::Rectangle<int>(
+      bounds.getX() + 8, bounds.getBottom() - 26, bounds.getWidth() - 16, 22);
+  return layout;
 }

@@ -71,12 +71,31 @@ void TailwindAudioProcessor::changeProgramName(int index,
 }
 
 void TailwindAudioProcessor::prepareToPlay(double sampleRate,
-                                          int samplesPerBlock) {
+                                           int samplesPerBlock) {
+  currentSampleRate = sampleRate;
+  inputMeterPeak.store(0.0f);
+  outputMeterPeak.store(0.0f);
   faustBridge.prepare(sampleRate, samplesPerBlock);
 }
 
 void TailwindAudioProcessor::releaseResources() {
   // Release resources here
+}
+
+void TailwindAudioProcessor::updatePeakMeter(std::atomic<float> &meterState,
+                                            float blockPeak,
+                                            int numSamples) noexcept {
+  const auto heldPeak = meterState.load(std::memory_order_relaxed);
+  if (blockPeak >= heldPeak) {
+    meterState.store(blockPeak, std::memory_order_relaxed);
+    return;
+  }
+
+  const auto decayTimeSeconds = 0.16f;
+  const auto decay = std::exp(
+      -static_cast<float>(numSamples) /
+      static_cast<float>(juce::jmax(1.0, currentSampleRate * decayTimeSeconds)));
+  meterState.store(heldPeak * decay, std::memory_order_relaxed);
 }
 
 bool TailwindAudioProcessor::isBusesLayoutSupported(
@@ -106,7 +125,30 @@ void TailwindAudioProcessor::processBlock(juce::AudioBuffer<float> &buffer,
   for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
     buffer.clear(i, 0, buffer.getNumSamples());
 
+  auto getMaxPeak = [&buffer](int numChannels) {
+    auto peak = 0.0f;
+    for (int ch = 0; ch < numChannels; ++ch)
+      peak = juce::jmax(peak, buffer.getMagnitude(ch, 0, buffer.getNumSamples()));
+    return peak;
+  };
+
+  const auto inputGainDb = apvts.getRawParameterValue(FaustParamIDs::inputGainDb);
+  const auto outputGainDb =
+      apvts.getRawParameterValue(FaustParamIDs::outputGainDb);
+  const auto inputGainLinear = juce::Decibels::decibelsToGain(
+      inputGainDb != nullptr ? inputGainDb->load() : 0.0f);
+  juce::ignoreUnused(outputGainDb);
+
+  updatePeakMeter(inputMeterPeak,
+                  juce::jlimit(0.0f, 1.2f,
+                               getMaxPeak(totalNumInputChannels) * inputGainLinear),
+                  buffer.getNumSamples());
+
   faustBridge.process(buffer, totalNumInputChannels, totalNumOutputChannels);
+
+  updatePeakMeter(outputMeterPeak,
+                  juce::jlimit(0.0f, 1.2f, getMaxPeak(totalNumOutputChannels)),
+                  buffer.getNumSamples());
 }
 
 bool TailwindAudioProcessor::hasEditor() const { return true; }

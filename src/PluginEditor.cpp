@@ -58,13 +58,24 @@ TailwindAudioProcessorEditor::TailwindAudioProcessorEditor(
   addAndMakeVisible(inputGainKnob);
   addAndMakeVisible(outputGainKnob);
 
+  inputGainKnob.setMeterSource([&p] { return p.getInputMeterPeak(); });
+  outputGainKnob.setMeterSource([&p] { return p.getOutputMeterPeak(); });
+
   setResizable(true, true);
-  setResizeLimits(minEditorWidth, minEditorHeight, 1280, 780);
-  setSize(900, 560);
+  setResizeLimits(minEditorWidth, minEditorHeight, 1072, 644);
+  setSize(minEditorWidth, minEditorHeight);
+
+  startTimerHz(30);
 }
 
 TailwindAudioProcessorEditor::~TailwindAudioProcessorEditor() {
+  stopTimer();
   setLookAndFeel(nullptr);
+}
+
+void TailwindAudioProcessorEditor::timerCallback() {
+  inputGainKnob.refreshMeter();
+  outputGainKnob.refreshMeter();
 }
 
 void TailwindAudioProcessorEditor::paint(juce::Graphics &g) {
@@ -74,7 +85,7 @@ void TailwindAudioProcessorEditor::paint(juce::Graphics &g) {
   // Compute section bounds (same as resized) for painting panels
   auto bounds = getLocalBounds();
   bounds.removeFromTop(50); // topBar
-  bounds.reduce(12, 8);
+  bounds.reduce(12, 12);
 
   const int topRowHeight =
       juce::jlimit(280, 420, (bounds.getHeight() * 2) / 3);
@@ -115,7 +126,7 @@ void TailwindAudioProcessorEditor::resized() {
   topBar.setBounds(bounds.removeFromTop(50));
 
   // Content area with padding
-  bounds.reduce(12, 8);
+  bounds.reduce(12, 12);
 
   const int topRowHeight =
       juce::jlimit(280, 420, (bounds.getHeight() * 2) / 3);
