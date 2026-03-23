@@ -9,7 +9,75 @@ TopBar::TopBar() {
     logo = juce::ImageFileFormat::loadFrom(logoData,
                                            static_cast<size_t>(logoDataSize));
   }
+
+  auto configureButton = [this](juce::TextButton &button) {
+    addAndMakeVisible(button);
+    button.setClickingTogglesState(false);
+    button.setColour(juce::TextButton::buttonColourId,
+                     juce::Colour(TailwindColors::panelBg).brighter(0.06f));
+    button.setColour(juce::TextButton::buttonOnColourId,
+                     juce::Colour(TailwindColors::accentWarm).withAlpha(0.22f));
+    button.setColour(juce::TextButton::textColourOffId,
+                     juce::Colour(TailwindColors::labelText));
+    button.setColour(juce::TextButton::textColourOnId,
+                     juce::Colour(TailwindColors::accentBright));
+  };
+
+  addAndMakeVisible(presetBox);
+  presetBox.setTextWhenNothingSelected("Preset");
+  presetBox.onChange = [this] {
+    if (onPresetSelected)
+      onPresetSelected(presetBox.getText());
+  };
+
+  configureButton(slotAButton);
+  configureButton(slotBButton);
+  configureButton(optionsButton);
+
+  slotAButton.onClick = [this] {
+    if (onSelectSlotA)
+      onSelectSlotA();
+  };
+  slotBButton.onClick = [this] {
+    if (onSelectSlotB)
+      onSelectSlotB();
+  };
+  optionsButton.onClick = [this] {
+    if (onShowOptionsMenu)
+      onShowOptionsMenu();
+  };
+
+  setActiveABSlot(true);
 }
+
+void TopBar::setActiveABSlot(bool isSlotA) {
+  slotAButton.setToggleState(isSlotA, juce::dontSendNotification);
+  slotBButton.setToggleState(!isSlotA, juce::dontSendNotification);
+}
+
+void TopBar::setPresetNames(const juce::StringArray &presetNames) {
+  auto selectedText = presetBox.getText();
+  presetBox.clear(juce::dontSendNotification);
+
+  for (int i = 0; i < presetNames.size(); ++i)
+    presetBox.addItem(presetNames[i], i + 1);
+
+  if (selectedText.isNotEmpty())
+    setSelectedPresetName(selectedText);
+}
+
+void TopBar::setSelectedPresetName(const juce::String &presetName) {
+  for (int i = 0; i < presetBox.getNumItems(); ++i) {
+    if (presetBox.getItemText(i) == presetName) {
+      presetBox.setSelectedItemIndex(i, juce::dontSendNotification);
+      return;
+    }
+  }
+
+  presetBox.setText(presetName, juce::dontSendNotification);
+}
+
+juce::Component *TopBar::getOptionsTargetComponent() { return &optionsButton; }
 
 void TopBar::paint(juce::Graphics &g) {
   auto bounds = getLocalBounds().toFloat();
@@ -33,24 +101,6 @@ void TopBar::paint(juce::Graphics &g) {
                 logo.getWidth(), logo.getHeight());
   }
 
-  // Plugin name on the right side
-  {
-    auto textBounds = getLocalBounds().reduced(16, 0);
-    g.setColour(juce::Colour(TailwindColors::titleText));
-    g.setFont(juce::Font(15.0f, juce::Font::bold));
-    g.drawText("TAILWIND", textBounds, juce::Justification::centredRight);
-  }
-
-  // Subtitle
-  {
-    auto subtitleBounds = getLocalBounds().reduced(16, 0);
-    subtitleBounds.removeFromRight(100);
-    g.setColour(juce::Colour(TailwindColors::sectionTitle));
-    g.setFont(juce::Font(10.0f));
-    g.drawText("Long Tail Reverb", subtitleBounds,
-               juce::Justification::centredRight);
-  }
-
   // Bottom border — warm accent line
   g.setColour(juce::Colour(TailwindColors::accentWarm).withAlpha(0.4f));
   g.drawLine(0.0f, bounds.getBottom() - 1.0f, bounds.getWidth(),
@@ -58,5 +108,24 @@ void TopBar::paint(juce::Graphics &g) {
 }
 
 void TopBar::resized() {
-  // No child components to layout
+  auto bounds = getLocalBounds().reduced(10, 7);
+  auto rightArea = bounds.removeFromRight(266);
+
+  auto positionControl = [](juce::Component &component,
+                            juce::Rectangle<int> &area, int width) {
+    constexpr int controlHeight = 24;
+    auto controlBounds = area.removeFromRight(width);
+    controlBounds.setY(controlBounds.getY() +
+                       (controlBounds.getHeight() - controlHeight) / 2);
+    controlBounds.setHeight(controlHeight);
+    component.setBounds(controlBounds);
+  };
+
+  positionControl(optionsButton, rightArea, 34);
+  rightArea.removeFromRight(4);
+  positionControl(slotBButton, rightArea, 24);
+  rightArea.removeFromRight(3);
+  positionControl(slotAButton, rightArea, 24);
+  rightArea.removeFromRight(6);
+  positionControl(presetBox, rightArea, 135);
 }

@@ -2,9 +2,12 @@
 #include "FaustParams.h"
 #include "ui/TailwindColors.h"
 
+#include <memory>
+
 TailwindAudioProcessorEditor::TailwindAudioProcessorEditor(
     TailwindAudioProcessor &p)
     : AudioProcessorEditor(&p),
+      audioProcessor(p),
       // MAIN
       mixKnob(p.apvts, FaustParamIDs::mix, "MIX", " %", true),
       decayKnob(p.apvts, FaustParamIDs::decay, "DECAY", " %", true),
@@ -32,6 +35,24 @@ TailwindAudioProcessorEditor::TailwindAudioProcessorEditor(
 
   // Top bar
   addAndMakeVisible(topBar);
+  topBar.onSelectSlotA = [this] {
+    audioProcessor.setActiveABSlot(TailwindAudioProcessor::ABSlot::A);
+    topBar.setActiveABSlot(true);
+    refreshPresetControls();
+  };
+  topBar.onSelectSlotB = [this] {
+    audioProcessor.setActiveABSlot(TailwindAudioProcessor::ABSlot::B);
+    topBar.setActiveABSlot(false);
+    refreshPresetControls();
+  };
+  topBar.onPresetSelected = [this](const juce::String &presetName) {
+    if (audioProcessor.loadPreset(presetName))
+      refreshPresetControls();
+  };
+  topBar.onShowOptionsMenu = [this] { showOptionsMenu(); };
+  topBar.setActiveABSlot(audioProcessor.getActiveABSlot() ==
+                         TailwindAudioProcessor::ABSlot::A);
+  refreshPresetControls();
 
   // Main section knobs
   addAndMakeVisible(mixKnob);
@@ -76,6 +97,71 @@ TailwindAudioProcessorEditor::~TailwindAudioProcessorEditor() {
 void TailwindAudioProcessorEditor::timerCallback() {
   inputGainKnob.refreshMeter();
   outputGainKnob.refreshMeter();
+}
+
+void TailwindAudioProcessorEditor::refreshPresetControls() {
+  topBar.setPresetNames(audioProcessor.getAvailablePresetNames());
+  topBar.setSelectedPresetName(audioProcessor.getDisplayedPresetName());
+  topBar.setActiveABSlot(audioProcessor.getActiveABSlot() ==
+                         TailwindAudioProcessor::ABSlot::A);
+}
+
+void TailwindAudioProcessorEditor::promptSavePreset() {
+  auto dialog = std::make_unique<juce::AlertWindow>("Save Preset", "Enter a preset name.",
+                                                    juce::AlertWindow::NoIcon);
+  dialog->addTextEditor("presetName", audioProcessor.getActivePresetName(),
+                        "Preset name");
+  dialog->addButton("Save", 1);
+  dialog->addButton("Cancel", 0);
+
+  auto *dialogPtr = dialog.release();
+  dialogPtr->enterModalState(true, juce::ModalCallbackFunction::create([this, dialogPtr](int result) {
+                             std::unique_ptr<juce::AlertWindow> owner(dialogPtr);
+                             if (result == 1 &&
+                                 audioProcessor.saveUserPreset(dialogPtr->getTextEditorContents("presetName").trim()))
+                               refreshPresetControls();
+                           }),
+                             true);
+}
+
+void TailwindAudioProcessorEditor::showOptionsMenu() {
+  juce::PopupMenu menu;
+  menu.addItem(1, "Copy A to B");
+  menu.addItem(2, "Copy B to A");
+  menu.addItem(3, "Clear A/B", audioProcessor.hasDistinctABState());
+  menu.addSeparator();
+  menu.addItem(4, "Save Preset...");
+  menu.addItem(5, "Delete Current Preset",
+               !audioProcessor.getActivePresetName().isEmpty() &&
+                   !audioProcessor.isActivePresetFactory());
+  menu.addItem(6, "Reveal Presets Folder");
+
+  menu.showMenuAsync(
+                     juce::PopupMenu::Options().withTargetComponent(
+                         topBar.getOptionsTargetComponent()),
+                     [this](int result) {
+                       if (result == 1)
+                         audioProcessor.copyABSlot(
+                             TailwindAudioProcessor::ABSlot::A,
+                             TailwindAudioProcessor::ABSlot::B);
+                       else if (result == 2)
+                         audioProcessor.copyABSlot(
+                             TailwindAudioProcessor::ABSlot::B,
+                             TailwindAudioProcessor::ABSlot::A);
+                       else if (result == 3)
+                         audioProcessor.clearABState();
+                       else if (result == 4)
+                         promptSavePreset();
+                       else if (result == 5)
+                         audioProcessor.deleteActiveUserPreset();
+                       else if (result == 6)
+                         audioProcessor.revealPresetDirectory();
+
+                       topBar.setActiveABSlot(
+                           audioProcessor.getActiveABSlot() ==
+                           TailwindAudioProcessor::ABSlot::A);
+                       refreshPresetControls();
+                     });
 }
 
 void TailwindAudioProcessorEditor::paint(juce::Graphics &g) {

@@ -301,3 +301,15 @@ TailwindLookAndFeel::getSliderLayout(juce::Slider &slider) {
       bounds.getX() + 8, bounds.getBottom() - 26, bounds.getWidth() - 16, 22);
   return layout;
 }
+
+juce::Font TailwindLookAndFeel::getTextButtonFont(juce::TextButton &button,
+                                                 int buttonHeight) {
+  juce::ignoreUnused(button);
+  return juce::Font(static_cast<float>(juce::jmax(10, buttonHeight - 12)),
+                    juce::Font::bold);
+}
+
+juce::Font TailwindLookAndFeel::getComboBoxFont(juce::ComboBox &box) {
+  juce::ignoreUnused(box);
+  return juce::Font(13.0f, juce::Font::plain);
+}

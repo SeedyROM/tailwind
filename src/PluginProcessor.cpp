@@ -3,13 +3,31 @@
 
 #include <cmath>
 
+namespace {
+
+constexpr auto pluginStateRootType = "TailwindPluginState";
+constexpr auto pluginStatePropertySchemaVersion = "schemaVersion";
+constexpr auto pluginStatePropertyPluginVersion = "pluginVersion";
+constexpr auto pluginStatePropertyActiveABSlot = "activeABSlot";
+constexpr auto pluginStatePropertySlotAPresetName = "slotAPresetName";
+constexpr auto pluginStatePropertySlotBPresetName = "slotBPresetName";
+constexpr auto pluginStateChildSlotA = "slotAState";
+constexpr auto pluginStateChildSlotB = "slotBState";
+constexpr auto abSlotNameA = "A";
+constexpr auto abSlotNameB = "B";
+
+} // namespace
+
 TailwindAudioProcessor::TailwindAudioProcessor()
     : AudioProcessor(
           BusesProperties()
               .withInput("Input", juce::AudioChannelSet::stereo(), true)
               .withOutput("Output", juce::AudioChannelSet::stereo(), true)),
       apvts(*this, nullptr, "Parameters", FaustParams::createLayout()),
-      faustBridge(apvts) {}
+      faustBridge(apvts) {
+  defaultPresetState = captureCurrentState();
+  initialiseABSlotsFromCurrentState();
+}
 
 TailwindAudioProcessor::~TailwindAudioProcessor() {}
 
@@ -80,6 +98,248 @@ void TailwindAudioProcessor::prepareToPlay(double sampleRate,
 
 void TailwindAudioProcessor::releaseResources() {
   // Release resources here
+}
+
+juce::ValueTree TailwindAudioProcessor::captureCurrentState() {
+  auto state = apvts.copyState();
+  sanitiseTransientState(state);
+  return state;
+}
+
+juce::ValueTree TailwindAudioProcessor::createWrappedPluginState(
+    bool includeABState) {
+  juce::ValueTree wrappedState(pluginStateRootType);
+  wrappedState.setProperty(pluginStatePropertySchemaVersion, stateSchemaVersion,
+                           nullptr);
+  wrappedState.setProperty(pluginStatePropertyPluginVersion,
+                           JucePlugin_VersionString, nullptr);
+  syncActiveABSlotFromCurrentState();
+  wrappedState.appendChild(captureCurrentState(), nullptr);
+
+  if (includeABState) {
+    wrappedState.setProperty(pluginStatePropertyActiveABSlot,
+                             activeABSlot == ABSlot::A ? abSlotNameA
+                                                       : abSlotNameB,
+                             nullptr);
+    wrappedState.setProperty(pluginStatePropertySlotAPresetName, slotAPresetName,
+                             nullptr);
+    wrappedState.setProperty(pluginStatePropertySlotBPresetName, slotBPresetName,
+                             nullptr);
+
+    juce::ValueTree slotAWrapper(pluginStateChildSlotA);
+    slotAWrapper.appendChild(slotAState.createCopy(), nullptr);
+    wrappedState.appendChild(slotAWrapper, nullptr);
+
+    juce::ValueTree slotBWrapper(pluginStateChildSlotB);
+    slotBWrapper.appendChild(slotBState.createCopy(), nullptr);
+    wrappedState.appendChild(slotBWrapper, nullptr);
+  }
+
+  return wrappedState;
+}
+
+juce::ValueTree TailwindAudioProcessor::migrateStateTree(
+    juce::ValueTree savedTree) const {
+  auto schemaVersion = savedTree.getProperty(pluginStatePropertySchemaVersion);
+  if (!schemaVersion.isInt() || static_cast<int>(schemaVersion) < 1)
+    savedTree.setProperty(pluginStatePropertySchemaVersion, stateSchemaVersion,
+                          nullptr);
+
+  if (!savedTree.hasProperty(pluginStatePropertyPluginVersion))
+    savedTree.setProperty(pluginStatePropertyPluginVersion,
+                          JucePlugin_VersionString, nullptr);
+
+  if (!savedTree.hasProperty(pluginStatePropertyActiveABSlot))
+    savedTree.setProperty(pluginStatePropertyActiveABSlot, abSlotNameA,
+                          nullptr);
+
+  if (!savedTree.hasProperty(pluginStatePropertySlotAPresetName))
+    savedTree.setProperty(pluginStatePropertySlotAPresetName, "Init", nullptr);
+
+  if (!savedTree.hasProperty(pluginStatePropertySlotBPresetName))
+    savedTree.setProperty(pluginStatePropertySlotBPresetName, "Init", nullptr);
+
+  return savedTree;
+}
+
+juce::ValueTree TailwindAudioProcessor::extractPluginStateFromSavedTree(
+    const juce::ValueTree &savedTree) const {
+  if (!savedTree.isValid())
+    return {};
+
+  if (savedTree.hasType(apvts.state.getType()))
+    return savedTree.createCopy();
+
+  if (!savedTree.hasType(pluginStateRootType))
+    return {};
+
+  auto migratedTree = migrateStateTree(savedTree.createCopy());
+  auto pluginState = migratedTree.getChildWithName(apvts.state.getType());
+  return pluginState.isValid() ? pluginState.createCopy() : juce::ValueTree{};
+}
+
+void TailwindAudioProcessor::applyStateToApvts(
+    const juce::ValueTree &stateToApply) {
+  if (!stateToApply.isValid())
+    return;
+
+  const juce::ScopedValueSetter<bool> applyingState(isApplyingABState, true);
+  apvts.replaceState(stateToApply.createCopy());
+}
+
+void TailwindAudioProcessor::initialiseABSlotsFromCurrentState() {
+  auto currentState = captureCurrentState();
+  slotAState = currentState.createCopy();
+  slotBState = currentState.createCopy();
+  activeABSlot = ABSlot::A;
+  slotAPresetName = "Init";
+  slotBPresetName = "Init";
+}
+
+void TailwindAudioProcessor::syncActiveABSlotFromCurrentState() {
+  if (isApplyingABState)
+    return;
+
+  getMutableABState(activeABSlot) = captureCurrentState();
+}
+
+void TailwindAudioProcessor::sanitiseTransientState(juce::ValueTree &state) const {
+  for (int i = 0; i < state.getNumChildren(); ++i) {
+    auto child = state.getChild(i);
+    if (child.hasProperty("id") && child["id"].toString() == "freeze_on")
+      child.setProperty("value", 0.0f, nullptr);
+  }
+}
+
+void TailwindAudioProcessor::setActivePresetName(const juce::String &presetName) {
+  if (activeABSlot == ABSlot::A)
+    slotAPresetName = presetName;
+  else
+    slotBPresetName = presetName;
+}
+
+juce::ValueTree &TailwindAudioProcessor::getMutableABState(ABSlot slot) {
+  return slot == ABSlot::A ? slotAState : slotBState;
+}
+
+const juce::ValueTree &TailwindAudioProcessor::getABState(ABSlot slot) const {
+  return slot == ABSlot::A ? slotAState : slotBState;
+}
+
+void TailwindAudioProcessor::setActiveABSlot(ABSlot slot) {
+  if (slot == activeABSlot)
+    return;
+
+  syncActiveABSlotFromCurrentState();
+  activeABSlot = slot;
+  applyStateToApvts(getABState(activeABSlot));
+}
+
+void TailwindAudioProcessor::copyABSlot(ABSlot from, ABSlot to) {
+  syncActiveABSlotFromCurrentState();
+  getMutableABState(to) = getABState(from).createCopy();
+  if (from == ABSlot::A)
+    slotBPresetName = slotAPresetName;
+  else
+    slotAPresetName = slotBPresetName;
+
+  if (activeABSlot == to)
+    applyStateToApvts(getABState(to));
+}
+
+void TailwindAudioProcessor::swapABSlots() {
+  syncActiveABSlotFromCurrentState();
+  auto previousA = slotAState.createCopy();
+  auto previousName = slotAPresetName;
+  slotAState = slotBState.createCopy();
+  slotBState = previousA;
+  slotAPresetName = slotBPresetName;
+  slotBPresetName = previousName;
+  applyStateToApvts(getABState(activeABSlot));
+}
+
+juce::StringArray TailwindAudioProcessor::getAvailablePresetNames() const {
+  juce::StringArray names;
+  for (const auto &preset :
+       TailwindPresetManager::getAvailablePresets(defaultPresetState,
+                                                  apvts.state.getType()))
+    names.add(preset.name);
+  return names;
+}
+
+bool TailwindAudioProcessor::hasDistinctABState() const {
+  return !slotAState.isEquivalentTo(slotBState);
+}
+
+juce::String TailwindAudioProcessor::getActivePresetName() const {
+  return activeABSlot == ABSlot::A ? slotAPresetName : slotBPresetName;
+}
+
+juce::String TailwindAudioProcessor::getDisplayedPresetName() {
+  syncActiveABSlotFromCurrentState();
+
+  const auto activePresetName = getActivePresetName();
+  const auto currentState = captureCurrentState();
+  const auto presetState = TailwindPresetManager::loadPresetState(
+      activePresetName, defaultPresetState, apvts.state.getType());
+
+  if (!presetState.isValid())
+    return activePresetName;
+
+  return currentState.isEquivalentTo(presetState) ? activePresetName : "Custom";
+}
+
+bool TailwindAudioProcessor::isActivePresetFactory() const {
+  return TailwindPresetManager::isFactoryPreset(getActivePresetName(),
+                                                defaultPresetState,
+                                                apvts.state.getType());
+}
+
+bool TailwindAudioProcessor::loadPreset(const juce::String &presetName) {
+  auto presetState = TailwindPresetManager::loadPresetState(
+      presetName, defaultPresetState, apvts.state.getType());
+  if (!presetState.isValid())
+    return false;
+
+  getMutableABState(activeABSlot) = presetState.createCopy();
+  setActivePresetName(presetName);
+  applyStateToApvts(getABState(activeABSlot));
+  return true;
+}
+
+bool TailwindAudioProcessor::saveUserPreset(const juce::String &presetName) {
+  syncActiveABSlotFromCurrentState();
+  auto wrappedState = createWrappedPluginState(false);
+  if (!TailwindPresetManager::saveUserPreset(presetName, wrappedState))
+    return false;
+
+  setActivePresetName(presetName);
+  return true;
+}
+
+bool TailwindAudioProcessor::deleteActiveUserPreset() {
+  auto presetName = getActivePresetName();
+  if (presetName.isEmpty() ||
+      TailwindPresetManager::isFactoryPreset(presetName, defaultPresetState,
+                                             apvts.state.getType()))
+    return false;
+
+  if (!TailwindPresetManager::deleteUserPreset(presetName))
+    return false;
+
+  setActivePresetName("Init");
+  return true;
+}
+
+void TailwindAudioProcessor::revealPresetDirectory() const {
+  TailwindPresetManager::revealPresetDirectory();
+}
+
+void TailwindAudioProcessor::clearABState() {
+  syncActiveABSlotFromCurrentState();
+  slotBState = slotAState.createCopy();
+  slotBPresetName = slotAPresetName;
+  activeABSlot = ABSlot::A;
 }
 
 void TailwindAudioProcessor::updatePeakMeter(std::atomic<float> &meterState,
@@ -158,16 +418,53 @@ juce::AudioProcessorEditor *TailwindAudioProcessor::createEditor() {
 }
 
 void TailwindAudioProcessor::getStateInformation(juce::MemoryBlock &destData) {
-  auto state = apvts.copyState();
+  auto state = createWrappedPluginState(true);
   std::unique_ptr<juce::XmlElement> xml(state.createXml());
   copyXmlToBinary(*xml, destData);
 }
 
 void TailwindAudioProcessor::setStateInformation(const void *data,
-                                                int sizeInBytes) {
+                                                 int sizeInBytes) {
   std::unique_ptr<juce::XmlElement> xml(getXmlFromBinary(data, sizeInBytes));
-  if (xml && xml->hasTagName(apvts.state.getType()))
-    apvts.replaceState(juce::ValueTree::fromXml(*xml));
+  if (xml == nullptr)
+    return;
+
+  auto restoredTree = juce::ValueTree::fromXml(*xml);
+  auto pluginState = extractPluginStateFromSavedTree(restoredTree);
+  if (!pluginState.isValid())
+    return;
+
+  applyStateToApvts(pluginState);
+
+  if (restoredTree.hasType(pluginStateRootType)) {
+    auto migratedTree = migrateStateTree(restoredTree.createCopy());
+    auto restoredSlotAWrapper =
+        migratedTree.getChildWithName(pluginStateChildSlotA);
+    auto restoredSlotBWrapper =
+        migratedTree.getChildWithName(pluginStateChildSlotB);
+
+    auto restoredSlotA =
+        restoredSlotAWrapper.getChildWithName(apvts.state.getType());
+    auto restoredSlotB =
+        restoredSlotBWrapper.getChildWithName(apvts.state.getType());
+
+    if (restoredSlotA.isValid() && restoredSlotB.isValid()) {
+      slotAState = restoredSlotA.createCopy();
+      slotBState = restoredSlotB.createCopy();
+      slotAPresetName =
+          migratedTree[pluginStatePropertySlotAPresetName].toString();
+      slotBPresetName =
+          migratedTree[pluginStatePropertySlotBPresetName].toString();
+      activeABSlot =
+          migratedTree[pluginStatePropertyActiveABSlot].toString() == abSlotNameB
+              ? ABSlot::B
+              : ABSlot::A;
+      applyStateToApvts(getABState(activeABSlot));
+      return;
+    }
+  }
+
+  initialiseABSlotsFromCurrentState();
 }
 
 juce::AudioProcessor *JUCE_CALLTYPE createPluginFilter() {

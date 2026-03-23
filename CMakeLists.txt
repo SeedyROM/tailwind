@@ -123,6 +123,7 @@ target_sources(Tailwind PRIVATE
     src/components/brand/TopBar.cpp
     src/components/controls/RotaryKnob.cpp
     src/components/controls/FreezeButton.cpp
+    src/presets/TailwindPresetManager.cpp
     src/ui/TailwindLookAndFeel.cpp
 )
 

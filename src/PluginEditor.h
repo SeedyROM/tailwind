@@ -19,9 +19,14 @@ public:
 
  private:
   void timerCallback() override;
+  void showOptionsMenu();
+  void promptSavePreset();
+  void refreshPresetControls();
 
   static constexpr int minEditorWidth = 760;
   static constexpr int minEditorHeight = 520;
+
+  TailwindAudioProcessor &audioProcessor;
 
   // Custom look and feel
   TailwindLookAndFeel tailwindLnf;

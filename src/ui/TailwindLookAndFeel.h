@@ -29,6 +29,8 @@ public:
   juce::Label *createSliderTextBox(juce::Slider &slider) override;
 
   juce::Slider::SliderLayout getSliderLayout(juce::Slider &slider) override;
+  juce::Font getTextButtonFont(juce::TextButton &button, int buttonHeight) override;
+  juce::Font getComboBoxFont(juce::ComboBox &box) override;
 
 private:
   JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(TailwindLookAndFeel)
