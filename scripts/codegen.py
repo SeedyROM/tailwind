@@ -344,12 +344,16 @@ BRIDGE_HEADER = """\
 #include "FaustDSP.h"
 #include "FaustParams.h"
 
+#include <atomic>
 #include <juce_audio_processors/juce_audio_processors.h>
 
 class FaustBridge {{
 public:
     explicit FaustBridge(juce::AudioProcessorValueTreeState& apvts)
-        : apvts_(apvts) {{}}
+        : apvts_(apvts)
+    {{
+{cached_param_init_lines}
+    }}
 
     /// Call from prepareToPlay
     void prepare(double sampleRate, int samplesPerBlock)
@@ -362,33 +366,45 @@ public:
     void process(juce::AudioBuffer<float>& buffer, int numInputChannels, int numOutputChannels)
     {{
         const int numSamples = buffer.getNumSamples();
-        resizeScratchBuffers(numSamples);
 
         // Sync APVTS -> Faust parameter zones (once per block)
 {sync_lines}
 
-        for (int ch = 0; ch < {num_inputs}; ++ch) {{
-            auto* scratch = inputScratch_.getWritePointer(ch);
-            if (numInputChannels <= 0) {{
-                juce::FloatVectorOperations::clear(scratch, numSamples);
-                continue;
-            }}
-
-            const int sourceChannel = juce::jmin(ch, numInputChannels - 1);
-            juce::FloatVectorOperations::copy(scratch, buffer.getReadPointer(sourceChannel), numSamples);
-        }}
-
         float* inputChannels[{num_inputs}];
         float* outputChannels[{num_outputs}];
-        for (int ch = 0; ch < {num_inputs}; ++ch)
-            inputChannels[ch] = inputScratch_.getWritePointer(ch);
-        for (int ch = 0; ch < {num_outputs}; ++ch)
-            outputChannels[ch] = outputScratch_.getWritePointer(ch);
+
+        const bool canProcessInPlace = numInputChannels >= {num_inputs} && numOutputChannels >= {num_outputs};
+        if (canProcessInPlace) {{
+            for (int ch = 0; ch < {num_inputs}; ++ch)
+                inputChannels[ch] = buffer.getWritePointer(ch);
+            for (int ch = 0; ch < {num_outputs}; ++ch)
+                outputChannels[ch] = buffer.getWritePointer(ch);
+        }} else {{
+            resizeScratchBuffers(numSamples);
+
+            for (int ch = 0; ch < {num_inputs}; ++ch) {{
+                auto* scratch = inputScratch_.getWritePointer(ch);
+                if (numInputChannels <= 0) {{
+                    juce::FloatVectorOperations::clear(scratch, numSamples);
+                    continue;
+                }}
+
+                const int sourceChannel = juce::jmin(ch, numInputChannels - 1);
+                juce::FloatVectorOperations::copy(scratch, buffer.getReadPointer(sourceChannel), numSamples);
+            }}
+
+            for (int ch = 0; ch < {num_inputs}; ++ch)
+                inputChannels[ch] = inputScratch_.getWritePointer(ch);
+            for (int ch = 0; ch < {num_outputs}; ++ch)
+                outputChannels[ch] = outputScratch_.getWritePointer(ch);
+        }}
 
         dsp_.compute(numSamples, inputChannels, outputChannels);
 
-        for (int ch = 0; ch < juce::jmin(numOutputChannels, {num_outputs}); ++ch)
-            buffer.copyFrom(ch, 0, outputScratch_.getReadPointer(ch), numSamples);
+        if (!canProcessInPlace) {{
+            for (int ch = 0; ch < juce::jmin(numOutputChannels, {num_outputs}); ++ch)
+                buffer.copyFrom(ch, 0, outputScratch_.getReadPointer(ch), numSamples);
+        }}
     }}
 
     /// Access the underlying Faust DSP instance (for advanced use)
@@ -401,6 +417,11 @@ public:
 {getter_methods}
 
 private:
+    static float loadParam(const std::atomic<float>* param, float fallback = 0.0f) noexcept
+    {{
+        return param != nullptr ? param->load(std::memory_order_relaxed) : fallback;
+    }}
+
     void resizeScratchBuffers(int numSamples)
     {{
         const int requiredSamples = juce::jmax(1, numSamples);
@@ -412,6 +433,7 @@ private:
 
     {class_name} dsp_;
     juce::AudioProcessorValueTreeState& apvts_;
+{cached_param_ptr_lines}
     juce::AudioBuffer<float> inputScratch_;
     juce::AudioBuffer<float> outputScratch_;
 }};
@@ -428,19 +450,27 @@ def generate_bridge_h(
     """Generate FaustBridge.h content."""
     # Sync lines: APVTS -> Faust zone
     sync_lines = []
+    cached_param_init_lines = []
+    cached_param_ptr_lines = []
     for p in params:
         pid = get_param_id(p)
         camel = param_id_to_camel(pid)
         varname = p["varname"]  # e.g. "fHslider0", "fCheckbox0"
         ptype = p["type"]
+        cached_name = f"{camel}Param_"
+
+        cached_param_init_lines.append(
+            f"        {cached_name} = apvts_.getRawParameterValue(FaustParamIDs::{camel});"
+        )
+        cached_param_ptr_lines.append(f"    std::atomic<float>* {cached_name} = nullptr;")
 
         if ptype == "checkbox" or ptype == "button":
             sync_lines.append(
-                f"        dsp_.{varname} = *apvts_.getRawParameterValue(FaustParamIDs::{camel}) > 0.5f ? 1.0f : 0.0f;"
+                f"        dsp_.{varname} = loadParam({cached_name}) > 0.5f ? 1.0f : 0.0f;"
             )
         else:
             sync_lines.append(
-                f"        dsp_.{varname} = *apvts_.getRawParameterValue(FaustParamIDs::{camel});"
+                f"        dsp_.{varname} = loadParam({cached_name});"
             )
 
     # Getter methods
@@ -453,11 +483,11 @@ def generate_bridge_h(
 
         if ptype == "checkbox" or ptype == "button":
             getter_lines.append(
-                f"    bool get{pascal}() const {{ return *apvts_.getRawParameterValue(FaustParamIDs::{camel}) > 0.5f; }}"
+                f"    bool get{pascal}() const {{ return loadParam({camel}Param_) > 0.5f; }}"
             )
         else:
             getter_lines.append(
-                f"    float get{pascal}() const {{ return *apvts_.getRawParameterValue(FaustParamIDs::{camel}); }}"
+                f"    float get{pascal}() const {{ return loadParam({camel}Param_); }}"
             )
 
     return BRIDGE_HEADER.format(
@@ -465,6 +495,8 @@ def generate_bridge_h(
         class_name=class_name,
         num_inputs=num_inputs,
         num_outputs=num_outputs,
+        cached_param_init_lines="\n".join(cached_param_init_lines),
+        cached_param_ptr_lines="\n".join(cached_param_ptr_lines),
         sync_lines="\n".join(sync_lines),
         getter_methods="\n".join(getter_lines),
     )

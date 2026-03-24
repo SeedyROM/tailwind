@@ -82,7 +82,7 @@ TailwindAudioProcessorEditor::TailwindAudioProcessorEditor(TailwindAudioProcesso
   setResizeLimits(minEditorWidth, minEditorHeight, 1072, 644);
   setSize(minEditorWidth, minEditorHeight);
 
-  startTimerHz(30);
+  startTimerHz(24);
 }
 
 TailwindAudioProcessorEditor::~TailwindAudioProcessorEditor() {

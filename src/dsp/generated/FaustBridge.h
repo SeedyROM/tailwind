@@ -8,12 +8,30 @@
 #include "FaustDSP.h"
 #include "FaustParams.h"
 
+#include <atomic>
 #include <juce_audio_processors/juce_audio_processors.h>
 
 class FaustBridge {
 public:
     explicit FaustBridge(juce::AudioProcessorValueTreeState& apvts)
-        : apvts_(apvts) {}
+        : apvts_(apvts)
+    {
+        mixParam_ = apvts_.getRawParameterValue(FaustParamIDs::mix);
+        decayParam_ = apvts_.getRawParameterValue(FaustParamIDs::decay);
+        preDelayMsParam_ = apvts_.getRawParameterValue(FaustParamIDs::preDelayMs);
+        diffusionParam_ = apvts_.getRawParameterValue(FaustParamIDs::diffusion);
+        dampingParam_ = apvts_.getRawParameterValue(FaustParamIDs::damping);
+        lowDampParam_ = apvts_.getRawParameterValue(FaustParamIDs::lowDamp);
+        modRateHzParam_ = apvts_.getRawParameterValue(FaustParamIDs::modRateHz);
+        modDepthParam_ = apvts_.getRawParameterValue(FaustParamIDs::modDepth);
+        lowCutHzParam_ = apvts_.getRawParameterValue(FaustParamIDs::lowCutHz);
+        highCutHzParam_ = apvts_.getRawParameterValue(FaustParamIDs::highCutHz);
+        freezeParam_ = apvts_.getRawParameterValue(FaustParamIDs::freeze);
+        freezeOnParam_ = apvts_.getRawParameterValue(FaustParamIDs::freezeOn);
+        saturationParam_ = apvts_.getRawParameterValue(FaustParamIDs::saturation);
+        inputGainDbParam_ = apvts_.getRawParameterValue(FaustParamIDs::inputGainDb);
+        outputGainDbParam_ = apvts_.getRawParameterValue(FaustParamIDs::outputGainDb);
+    }
 
     /// Call from prepareToPlay
     void prepare(double sampleRate, int samplesPerBlock)
@@ -26,47 +44,59 @@ public:
     void process(juce::AudioBuffer<float>& buffer, int numInputChannels, int numOutputChannels)
     {
         const int numSamples = buffer.getNumSamples();
-        resizeScratchBuffers(numSamples);
 
         // Sync APVTS -> Faust parameter zones (once per block)
-        dsp_.fHslider1 = *apvts_.getRawParameterValue(FaustParamIDs::mix);
-        dsp_.fHslider3 = *apvts_.getRawParameterValue(FaustParamIDs::decay);
-        dsp_.fHslider5 = *apvts_.getRawParameterValue(FaustParamIDs::preDelayMs);
-        dsp_.fHslider6 = *apvts_.getRawParameterValue(FaustParamIDs::diffusion);
-        dsp_.fHslider4 = *apvts_.getRawParameterValue(FaustParamIDs::damping);
-        dsp_.fHslider9 = *apvts_.getRawParameterValue(FaustParamIDs::lowDamp);
-        dsp_.fHslider8 = *apvts_.getRawParameterValue(FaustParamIDs::modRateHz);
-        dsp_.fHslider7 = *apvts_.getRawParameterValue(FaustParamIDs::modDepth);
-        dsp_.fHslider10 = *apvts_.getRawParameterValue(FaustParamIDs::lowCutHz);
-        dsp_.fHslider11 = *apvts_.getRawParameterValue(FaustParamIDs::highCutHz);
-        dsp_.fHslider2 = *apvts_.getRawParameterValue(FaustParamIDs::freeze);
-        dsp_.fCheckbox0 = *apvts_.getRawParameterValue(FaustParamIDs::freezeOn) > 0.5f ? 1.0f : 0.0f;
-        dsp_.fHslider12 = *apvts_.getRawParameterValue(FaustParamIDs::saturation);
-        dsp_.fHslider0 = *apvts_.getRawParameterValue(FaustParamIDs::inputGainDb);
-        dsp_.fHslider13 = *apvts_.getRawParameterValue(FaustParamIDs::outputGainDb);
-
-        for (int ch = 0; ch < 2; ++ch) {
-            auto* scratch = inputScratch_.getWritePointer(ch);
-            if (numInputChannels <= 0) {
-                juce::FloatVectorOperations::clear(scratch, numSamples);
-                continue;
-            }
-
-            const int sourceChannel = juce::jmin(ch, numInputChannels - 1);
-            juce::FloatVectorOperations::copy(scratch, buffer.getReadPointer(sourceChannel), numSamples);
-        }
+        dsp_.fHslider1 = loadParam(mixParam_);
+        dsp_.fHslider3 = loadParam(decayParam_);
+        dsp_.fHslider5 = loadParam(preDelayMsParam_);
+        dsp_.fHslider6 = loadParam(diffusionParam_);
+        dsp_.fHslider4 = loadParam(dampingParam_);
+        dsp_.fHslider9 = loadParam(lowDampParam_);
+        dsp_.fHslider8 = loadParam(modRateHzParam_);
+        dsp_.fHslider7 = loadParam(modDepthParam_);
+        dsp_.fHslider10 = loadParam(lowCutHzParam_);
+        dsp_.fHslider11 = loadParam(highCutHzParam_);
+        dsp_.fHslider2 = loadParam(freezeParam_);
+        dsp_.fCheckbox0 = loadParam(freezeOnParam_) > 0.5f ? 1.0f : 0.0f;
+        dsp_.fHslider12 = loadParam(saturationParam_);
+        dsp_.fHslider0 = loadParam(inputGainDbParam_);
+        dsp_.fHslider13 = loadParam(outputGainDbParam_);
 
         float* inputChannels[2];
         float* outputChannels[2];
-        for (int ch = 0; ch < 2; ++ch)
-            inputChannels[ch] = inputScratch_.getWritePointer(ch);
-        for (int ch = 0; ch < 2; ++ch)
-            outputChannels[ch] = outputScratch_.getWritePointer(ch);
+
+        const bool canProcessInPlace = numInputChannels >= 2 && numOutputChannels >= 2;
+        if (canProcessInPlace) {
+            for (int ch = 0; ch < 2; ++ch)
+                inputChannels[ch] = buffer.getWritePointer(ch);
+            for (int ch = 0; ch < 2; ++ch)
+                outputChannels[ch] = buffer.getWritePointer(ch);
+        } else {
+            resizeScratchBuffers(numSamples);
+
+            for (int ch = 0; ch < 2; ++ch) {
+                auto* scratch = inputScratch_.getWritePointer(ch);
+                if (numInputChannels <= 0) {
+                    juce::FloatVectorOperations::clear(scratch, numSamples);
+                    continue;
+                }
+
+                const int sourceChannel = juce::jmin(ch, numInputChannels - 1);
+                juce::FloatVectorOperations::copy(scratch, buffer.getReadPointer(sourceChannel), numSamples);
+            }
+
+            for (int ch = 0; ch < 2; ++ch)
+                inputChannels[ch] = inputScratch_.getWritePointer(ch);
+            for (int ch = 0; ch < 2; ++ch)
+                outputChannels[ch] = outputScratch_.getWritePointer(ch);
+        }
 
         dsp_.compute(numSamples, inputChannels, outputChannels);
 
-        for (int ch = 0; ch < juce::jmin(numOutputChannels, 2); ++ch)
-            buffer.copyFrom(ch, 0, outputScratch_.getReadPointer(ch), numSamples);
+        if (!canProcessInPlace) {
+            for (int ch = 0; ch < juce::jmin(numOutputChannels, 2); ++ch)
+                buffer.copyFrom(ch, 0, outputScratch_.getReadPointer(ch), numSamples);
+        }
     }
 
     /// Access the underlying Faust DSP instance (for advanced use)
@@ -76,23 +106,28 @@ public:
     // ----------------------------------------------------------------------
     // Named getters (read current APVTS values)
     // ----------------------------------------------------------------------
-    float getMix() const { return *apvts_.getRawParameterValue(FaustParamIDs::mix); }
-    float getDecay() const { return *apvts_.getRawParameterValue(FaustParamIDs::decay); }
-    float getPreDelayMs() const { return *apvts_.getRawParameterValue(FaustParamIDs::preDelayMs); }
-    float getDiffusion() const { return *apvts_.getRawParameterValue(FaustParamIDs::diffusion); }
-    float getDamping() const { return *apvts_.getRawParameterValue(FaustParamIDs::damping); }
-    float getLowDamp() const { return *apvts_.getRawParameterValue(FaustParamIDs::lowDamp); }
-    float getModRateHz() const { return *apvts_.getRawParameterValue(FaustParamIDs::modRateHz); }
-    float getModDepth() const { return *apvts_.getRawParameterValue(FaustParamIDs::modDepth); }
-    float getLowCutHz() const { return *apvts_.getRawParameterValue(FaustParamIDs::lowCutHz); }
-    float getHighCutHz() const { return *apvts_.getRawParameterValue(FaustParamIDs::highCutHz); }
-    float getFreeze() const { return *apvts_.getRawParameterValue(FaustParamIDs::freeze); }
-    bool getFreezeOn() const { return *apvts_.getRawParameterValue(FaustParamIDs::freezeOn) > 0.5f; }
-    float getSaturation() const { return *apvts_.getRawParameterValue(FaustParamIDs::saturation); }
-    float getInputGainDb() const { return *apvts_.getRawParameterValue(FaustParamIDs::inputGainDb); }
-    float getOutputGainDb() const { return *apvts_.getRawParameterValue(FaustParamIDs::outputGainDb); }
+    float getMix() const { return loadParam(mixParam_); }
+    float getDecay() const { return loadParam(decayParam_); }
+    float getPreDelayMs() const { return loadParam(preDelayMsParam_); }
+    float getDiffusion() const { return loadParam(diffusionParam_); }
+    float getDamping() const { return loadParam(dampingParam_); }
+    float getLowDamp() const { return loadParam(lowDampParam_); }
+    float getModRateHz() const { return loadParam(modRateHzParam_); }
+    float getModDepth() const { return loadParam(modDepthParam_); }
+    float getLowCutHz() const { return loadParam(lowCutHzParam_); }
+    float getHighCutHz() const { return loadParam(highCutHzParam_); }
+    float getFreeze() const { return loadParam(freezeParam_); }
+    bool getFreezeOn() const { return loadParam(freezeOnParam_) > 0.5f; }
+    float getSaturation() const { return loadParam(saturationParam_); }
+    float getInputGainDb() const { return loadParam(inputGainDbParam_); }
+    float getOutputGainDb() const { return loadParam(outputGainDbParam_); }
 
 private:
+    static float loadParam(const std::atomic<float>* param, float fallback = 0.0f) noexcept
+    {
+        return param != nullptr ? param->load(std::memory_order_relaxed) : fallback;
+    }
+
     void resizeScratchBuffers(int numSamples)
     {
         const int requiredSamples = juce::jmax(1, numSamples);
@@ -104,6 +139,21 @@ private:
 
     TailwindDSP dsp_;
     juce::AudioProcessorValueTreeState& apvts_;
+    std::atomic<float>* mixParam_ = nullptr;
+    std::atomic<float>* decayParam_ = nullptr;
+    std::atomic<float>* preDelayMsParam_ = nullptr;
+    std::atomic<float>* diffusionParam_ = nullptr;
+    std::atomic<float>* dampingParam_ = nullptr;
+    std::atomic<float>* lowDampParam_ = nullptr;
+    std::atomic<float>* modRateHzParam_ = nullptr;
+    std::atomic<float>* modDepthParam_ = nullptr;
+    std::atomic<float>* lowCutHzParam_ = nullptr;
+    std::atomic<float>* highCutHzParam_ = nullptr;
+    std::atomic<float>* freezeParam_ = nullptr;
+    std::atomic<float>* freezeOnParam_ = nullptr;
+    std::atomic<float>* saturationParam_ = nullptr;
+    std::atomic<float>* inputGainDbParam_ = nullptr;
+    std::atomic<float>* outputGainDbParam_ = nullptr;
     juce::AudioBuffer<float> inputScratch_;
     juce::AudioBuffer<float> outputScratch_;
 };

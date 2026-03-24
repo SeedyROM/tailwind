@@ -5,6 +5,15 @@ namespace {
 constexpr auto presetFileExtension = ".tailwindpreset";
 constexpr auto presetRootType = "TailwindPluginState";
 
+juce::CriticalSection presetCacheLock;
+juce::Identifier cachedPluginStateType;
+juce::ValueTree cachedReferenceState;
+std::vector<TailwindPresetManager::PresetInfo> cachedFactoryPresets;
+std::vector<TailwindPresetManager::PresetInfo> cachedAvailablePresets;
+bool hasCachedFactoryPresets = false;
+bool hasCachedAvailablePresets = false;
+bool userPresetListDirty = true;
+
 juce::ValueTree createPresetState(const juce::ValueTree& referenceState,
                                   std::initializer_list<std::pair<const char*, float>> values) {
   auto state = referenceState.createCopy();
@@ -145,6 +154,67 @@ juce::ValueTree loadWrappedStateFromFile(const juce::File& file) {
   return xml != nullptr ? juce::ValueTree::fromXml(*xml) : juce::ValueTree{};
 }
 
+juce::File getPresetDirectoryForCache() {
+  auto directory = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
+                       .getChildFile("SeedyROM")
+                       .getChildFile("Tailwind")
+                       .getChildFile("Presets");
+  directory.createDirectory();
+  return directory;
+}
+
+bool shouldRebuildFactoryPresets(const juce::ValueTree& referenceState,
+                                 const juce::Identifier& pluginStateType) {
+  if (!hasCachedFactoryPresets)
+    return true;
+
+  if (cachedPluginStateType != pluginStateType)
+    return true;
+
+  return !cachedReferenceState.isEquivalentTo(referenceState);
+}
+
+void rebuildFactoryPresetCache(const juce::ValueTree& referenceState,
+                               const juce::Identifier& pluginStateType) {
+  cachedFactoryPresets = createFactoryPresets(referenceState, pluginStateType);
+  cachedReferenceState = referenceState.createCopy();
+  cachedPluginStateType = pluginStateType;
+  hasCachedFactoryPresets = true;
+  userPresetListDirty = true;
+}
+
+void rebuildAvailablePresetCache() {
+  cachedAvailablePresets = cachedFactoryPresets;
+
+  auto directory = getPresetDirectoryForCache();
+  auto files = directory.findChildFiles(
+      juce::File::findFiles, false, "*" + juce::String(presetFileExtension));
+
+  for (const auto& file : files)
+    cachedAvailablePresets.push_back({file.getFileNameWithoutExtension(), false, file, {}});
+
+  std::sort(cachedAvailablePresets.begin(),
+            cachedAvailablePresets.end(),
+            [](const TailwindPresetManager::PresetInfo& lhs,
+               const TailwindPresetManager::PresetInfo& rhs) {
+              if (lhs.isFactory != rhs.isFactory)
+                return lhs.isFactory;
+              return lhs.name < rhs.name;
+            });
+
+  hasCachedAvailablePresets = true;
+  userPresetListDirty = false;
+}
+
+void ensurePresetCaches(const juce::ValueTree& referenceState,
+                        const juce::Identifier& pluginStateType) {
+  if (shouldRebuildFactoryPresets(referenceState, pluginStateType))
+    rebuildFactoryPresetCache(referenceState, pluginStateType);
+
+  if (!hasCachedAvailablePresets || userPresetListDirty)
+    rebuildAvailablePresetCache();
+}
+
 } // namespace
 
 juce::File TailwindPresetManager::getPresetDirectory() {
@@ -159,27 +229,21 @@ juce::File TailwindPresetManager::getPresetDirectory() {
 std::vector<TailwindPresetManager::PresetInfo>
 TailwindPresetManager::getAvailablePresets(const juce::ValueTree& referenceState,
                                            const juce::Identifier& pluginStateType) {
-  auto presets = createFactoryPresets(referenceState, pluginStateType);
-  auto directory = getPresetDirectory();
-  auto files = directory.findChildFiles(
-      juce::File::findFiles, false, "*" + juce::String(presetFileExtension));
-
-  for (const auto& file : files)
-    presets.push_back({file.getFileNameWithoutExtension(), false, file, {}});
-
-  std::sort(presets.begin(), presets.end(), [](const PresetInfo& lhs, const PresetInfo& rhs) {
-    if (lhs.isFactory != rhs.isFactory)
-      return lhs.isFactory;
-    return lhs.name < rhs.name;
-  });
-
-  return presets;
+  const juce::ScopedLock lock(presetCacheLock);
+  ensurePresetCaches(referenceState, pluginStateType);
+  return cachedAvailablePresets;
 }
 
 juce::ValueTree TailwindPresetManager::loadPresetState(const juce::String& presetName,
                                                        const juce::ValueTree& referenceState,
                                                        const juce::Identifier& pluginStateType) {
-  auto presets = getAvailablePresets(referenceState, pluginStateType);
+  std::vector<TailwindPresetManager::PresetInfo> presets;
+  {
+    const juce::ScopedLock lock(presetCacheLock);
+    ensurePresetCaches(referenceState, pluginStateType);
+    presets = cachedAvailablePresets;
+  }
+
   auto* preset = findPresetByName(presets, presetName);
   if (preset == nullptr)
     return {};
@@ -202,12 +266,24 @@ bool TailwindPresetManager::saveUserPreset(const juce::String& presetName,
 
   auto file = getPresetDirectory().getChildFile(presetName + presetFileExtension);
   std::unique_ptr<juce::XmlElement> xml(wrappedState.createXml());
-  return xml != nullptr && xml->writeTo(file);
+  const auto didSave = xml != nullptr && xml->writeTo(file);
+  if (didSave) {
+    const juce::ScopedLock lock(presetCacheLock);
+    userPresetListDirty = true;
+  }
+
+  return didSave;
 }
 
 bool TailwindPresetManager::deleteUserPreset(const juce::String& presetName) {
   auto file = getPresetDirectory().getChildFile(presetName + presetFileExtension);
-  return file.existsAsFile() && file.deleteFile();
+  const auto didDelete = file.existsAsFile() && file.deleteFile();
+  if (didDelete) {
+    const juce::ScopedLock lock(presetCacheLock);
+    userPresetListDirty = true;
+  }
+
+  return didDelete;
 }
 
 void TailwindPresetManager::revealPresetDirectory() {
@@ -217,7 +293,13 @@ void TailwindPresetManager::revealPresetDirectory() {
 bool TailwindPresetManager::isFactoryPreset(const juce::String& presetName,
                                             const juce::ValueTree& referenceState,
                                             const juce::Identifier& pluginStateType) {
-  auto presets = getAvailablePresets(referenceState, pluginStateType);
+  std::vector<TailwindPresetManager::PresetInfo> presets;
+  {
+    const juce::ScopedLock lock(presetCacheLock);
+    ensurePresetCaches(referenceState, pluginStateType);
+    presets = cachedAvailablePresets;
+  }
+
   auto* preset = findPresetByName(presets, presetName);
   return preset != nullptr && preset->isFactory;
 }

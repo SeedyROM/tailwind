@@ -97,6 +97,8 @@ private:
   bool isApplyingABState = false;
   std::atomic<float> inputMeterPeak{0.0f};
   std::atomic<float> outputMeterPeak{0.0f};
+  int meterSamplesSinceLastUpdate = 0;
+  int meterUpdateIntervalSamples = 512;
   double currentSampleRate = 44100.0;
 
   JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(TailwindAudioProcessor)
