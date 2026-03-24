@@ -4,6 +4,10 @@ BigSky-inspired long tail reverb plugin.
 
 [![Build](https://github.com/SeedyROM/tailwind/actions/workflows/build.yml/badge.svg)](https://github.com/SeedyROM/tailwind/actions/workflows/build.yml)
 
+<img width="1083" height="644" alt="Screenshot 2026-03-23 at 2 45 31 AM" src="https://github.com/user-attachments/assets/5b45e59f-2a45-4f97-b9cc-b860e12a723e" />
+<br />
+<br />
+
 Tailwind is a stereo-output algorithmic reverb built around an 8x8 Feedback Delay Network with Hadamard mixing, Zita-Rev1-style frequency-dependent damping, LFO-modulated tank delay lines, input diffusers, and a freeze mode. It accepts mono or stereo input and always produces stereo output. The DSP is written in [Faust](https://faust.grame.fr/) and the UI is built with [JUCE](https://juce.com/).
 
 The freeze path is designed as a playable, automatable part of the effect rather than a static preset state. That means hosts can drive it with automation, macros, LFOs, CV, or arrangement changes for texture work, while the plugin avoids restoring into an accidentally frozen state.
