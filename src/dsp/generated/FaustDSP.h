@@ -983,33 +983,6 @@ struct TailwindDSP {
 	
 	virtual void buildUserInterface(UI* ui_interface) {
 		ui_interface->openVerticalBox("tailwind_reverb");
-		ui_interface->declare(&fHslider1, "01", "");
-		ui_interface->declare(&fHslider1, "id", "mix");
-		ui_interface->addHorizontalSlider("Mix", &fHslider1, FAUSTFLOAT(0.5f), FAUSTFLOAT(0.0f), FAUSTFLOAT(1.0f), FAUSTFLOAT(0.01f));
-		ui_interface->declare(&fHslider3, "02", "");
-		ui_interface->declare(&fHslider3, "id", "decay");
-		ui_interface->addHorizontalSlider("Decay", &fHslider3, FAUSTFLOAT(0.85f), FAUSTFLOAT(0.1f), FAUSTFLOAT(0.99f), FAUSTFLOAT(0.001f));
-		ui_interface->declare(&fHslider5, "03", "");
-		ui_interface->declare(&fHslider5, "id", "pre_delay_ms");
-		ui_interface->addHorizontalSlider("Pre-Delay (ms)", &fHslider5, FAUSTFLOAT(2e+01f), FAUSTFLOAT(0.0f), FAUSTFLOAT(5e+02f), FAUSTFLOAT(1.0f));
-		ui_interface->declare(&fHslider6, "04", "");
-		ui_interface->declare(&fHslider6, "id", "diffusion");
-		ui_interface->addHorizontalSlider("Diffusion", &fHslider6, FAUSTFLOAT(0.7f), FAUSTFLOAT(0.0f), FAUSTFLOAT(1.0f), FAUSTFLOAT(0.01f));
-		ui_interface->declare(&fHslider4, "05", "");
-		ui_interface->declare(&fHslider4, "id", "damping");
-		ui_interface->addHorizontalSlider("Damping", &fHslider4, FAUSTFLOAT(0.5f), FAUSTFLOAT(0.0f), FAUSTFLOAT(1.0f), FAUSTFLOAT(0.01f));
-		ui_interface->declare(&fHslider9, "06", "");
-		ui_interface->declare(&fHslider9, "id", "low_damp");
-		ui_interface->addHorizontalSlider("Low Damp", &fHslider9, FAUSTFLOAT(0.2f), FAUSTFLOAT(0.0f), FAUSTFLOAT(1.0f), FAUSTFLOAT(0.01f));
-		ui_interface->declare(&fHslider8, "07", "");
-		ui_interface->declare(&fHslider8, "id", "mod_rate_hz");
-		ui_interface->addHorizontalSlider("Mod Rate (Hz)", &fHslider8, FAUSTFLOAT(0.8f), FAUSTFLOAT(0.1f), FAUSTFLOAT(5.0f), FAUSTFLOAT(0.01f));
-		ui_interface->declare(&fHslider7, "08", "");
-		ui_interface->declare(&fHslider7, "id", "mod_depth");
-		ui_interface->addHorizontalSlider("Mod Depth", &fHslider7, FAUSTFLOAT(0.3f), FAUSTFLOAT(0.0f), FAUSTFLOAT(1.0f), FAUSTFLOAT(0.01f));
-		ui_interface->declare(&fHslider10, "09", "");
-		ui_interface->declare(&fHslider10, "id", "low_cut_hz");
-		ui_interface->addHorizontalSlider("Low Cut (Hz)", &fHslider10, FAUSTFLOAT(8e+01f), FAUSTFLOAT(2e+01f), FAUSTFLOAT(5e+02f), FAUSTFLOAT(1.0f));
 		ui_interface->declare(&fHslider11, "10", "");
 		ui_interface->declare(&fHslider11, "id", "high_cut_hz");
 		ui_interface->addHorizontalSlider("High Cut (Hz)", &fHslider11, FAUSTFLOAT(1.2e+04f), FAUSTFLOAT(1e+03f), FAUSTFLOAT(2e+04f), FAUSTFLOAT(1e+02f));
@@ -1028,6 +1001,33 @@ struct TailwindDSP {
 		ui_interface->declare(&fHslider13, "15", "");
 		ui_interface->declare(&fHslider13, "id", "output_gain_db");
 		ui_interface->addHorizontalSlider("Output Gain", &fHslider13, FAUSTFLOAT(0.0f), FAUSTFLOAT(-24.0f), FAUSTFLOAT(24.0f), FAUSTFLOAT(0.1f));
+		ui_interface->declare(&fHslider1, "1", "");
+		ui_interface->declare(&fHslider1, "id", "mix");
+		ui_interface->addHorizontalSlider("Mix", &fHslider1, FAUSTFLOAT(0.5f), FAUSTFLOAT(0.0f), FAUSTFLOAT(1.0f), FAUSTFLOAT(0.01f));
+		ui_interface->declare(&fHslider3, "2", "");
+		ui_interface->declare(&fHslider3, "id", "decay");
+		ui_interface->addHorizontalSlider("Decay", &fHslider3, FAUSTFLOAT(0.85f), FAUSTFLOAT(0.1f), FAUSTFLOAT(0.99f), FAUSTFLOAT(0.001f));
+		ui_interface->declare(&fHslider5, "3", "");
+		ui_interface->declare(&fHslider5, "id", "pre_delay_ms");
+		ui_interface->addHorizontalSlider("Pre-Delay (ms)", &fHslider5, FAUSTFLOAT(2e+01f), FAUSTFLOAT(0.0f), FAUSTFLOAT(5e+02f), FAUSTFLOAT(1.0f));
+		ui_interface->declare(&fHslider6, "4", "");
+		ui_interface->declare(&fHslider6, "id", "diffusion");
+		ui_interface->addHorizontalSlider("Diffusion", &fHslider6, FAUSTFLOAT(0.7f), FAUSTFLOAT(0.0f), FAUSTFLOAT(1.0f), FAUSTFLOAT(0.01f));
+		ui_interface->declare(&fHslider4, "5", "");
+		ui_interface->declare(&fHslider4, "id", "damping");
+		ui_interface->addHorizontalSlider("Damping", &fHslider4, FAUSTFLOAT(0.5f), FAUSTFLOAT(0.0f), FAUSTFLOAT(1.0f), FAUSTFLOAT(0.01f));
+		ui_interface->declare(&fHslider9, "6", "");
+		ui_interface->declare(&fHslider9, "id", "low_damp");
+		ui_interface->addHorizontalSlider("Low Damp", &fHslider9, FAUSTFLOAT(0.2f), FAUSTFLOAT(0.0f), FAUSTFLOAT(1.0f), FAUSTFLOAT(0.01f));
+		ui_interface->declare(&fHslider8, "7", "");
+		ui_interface->declare(&fHslider8, "id", "mod_rate_hz");
+		ui_interface->addHorizontalSlider("Mod Rate (Hz)", &fHslider8, FAUSTFLOAT(0.8f), FAUSTFLOAT(0.1f), FAUSTFLOAT(5.0f), FAUSTFLOAT(0.01f));
+		ui_interface->declare(&fHslider7, "8", "");
+		ui_interface->declare(&fHslider7, "id", "mod_depth");
+		ui_interface->addHorizontalSlider("Mod Depth", &fHslider7, FAUSTFLOAT(0.3f), FAUSTFLOAT(0.0f), FAUSTFLOAT(1.0f), FAUSTFLOAT(0.01f));
+		ui_interface->declare(&fHslider10, "9", "");
+		ui_interface->declare(&fHslider10, "id", "low_cut_hz");
+		ui_interface->addHorizontalSlider("Low Cut (Hz)", &fHslider10, FAUSTFLOAT(8e+01f), FAUSTFLOAT(2e+01f), FAUSTFLOAT(5e+02f), FAUSTFLOAT(1.0f));
 		ui_interface->closeBox();
 	}
 	
@@ -1269,15 +1269,11 @@ struct TailwindDSP {
 			}
 			/* Post code */
 			iVec0_idx_save = vsize;
-			/* Recursive loop 8 */
-			/* Pre code */
-			fRec15_idx = (fRec15_idx + fRec15_idx_save) & 63;
+			/* Vectorizable loop 8 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				fRec15[(i + fRec15_idx) & 63] = fSlow2 + fConst2 * fRec15[(i + fRec15_idx - 1) & 63];
+				fZec18[i] = std::pow(1.5e+02f, fRec16[(i + fRec16_idx) & 63]);
 			}
-			/* Post code */
-			fRec15_idx_save = vsize;
 			/* Recursive loop 9 */
 			/* Pre code */
 			fRec27_idx = (fRec27_idx + fRec27_idx_save) & 63;
@@ -1287,7 +1283,16 @@ struct TailwindDSP {
 			}
 			/* Post code */
 			fRec27_idx_save = vsize;
-			/* Vectorizable loop 10 */
+			/* Recursive loop 10 */
+			/* Pre code */
+			fRec15_idx = (fRec15_idx + fRec15_idx_save) & 63;
+			/* Compute code */
+			for (int i = 0; i < vsize; i = i + 1) {
+				fRec15[(i + fRec15_idx) & 63] = fSlow2 + fConst2 * fRec15[(i + fRec15_idx - 1) & 63];
+			}
+			/* Post code */
+			fRec15_idx_save = vsize;
+			/* Vectorizable loop 11 */
 			/* Pre code */
 			fYec0_idx = (fYec0_idx + fYec0_idx_save) & 32767;
 			/* Compute code */
@@ -1296,27 +1301,27 @@ struct TailwindDSP {
 			}
 			/* Post code */
 			fYec0_idx_save = vsize;
-			/* Vectorizable loop 11 */
+			/* Vectorizable loop 12 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
 				iZec3[i] = std::min<int>(24001, std::max<int>(0, iZec2[i]));
 			}
-			/* Vectorizable loop 12 */
+			/* Vectorizable loop 13 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
 				fZec5[i] = fZec4[i] + (1.0f - fZec1[i]);
 			}
-			/* Vectorizable loop 13 */
+			/* Vectorizable loop 14 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
 				fZec6[i] = fZec1[i] - fZec4[i];
 			}
-			/* Vectorizable loop 14 */
+			/* Vectorizable loop 15 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
 				iZec7[i] = std::min<int>(24001, std::max<int>(0, iZec2[i] + 1));
 			}
-			/* Vectorizable loop 15 */
+			/* Vectorizable loop 16 */
 			/* Pre code */
 			fYec5_idx = (fYec5_idx + fYec5_idx_save) & 32767;
 			/* Compute code */
@@ -1325,11 +1330,6 @@ struct TailwindDSP {
 			}
 			/* Post code */
 			fYec5_idx_save = vsize;
-			/* Vectorizable loop 16 */
-			/* Compute code */
-			for (int i = 0; i < vsize; i = i + 1) {
-				fZec18[i] = std::pow(1.5e+02f, fRec16[(i + fRec16_idx) & 63]);
-			}
 			/* Recursive loop 17 */
 			/* Pre code */
 			fYec1_idx = (fYec1_idx + fYec1_idx_save) & 255;
@@ -1343,7 +1343,17 @@ struct TailwindDSP {
 			/* Post code */
 			fYec1_idx_save = vsize;
 			fRec24_idx_save = vsize;
-			/* Recursive loop 18 */
+			/* Vectorizable loop 18 */
+			/* Compute code */
+			for (int i = 0; i < vsize; i = i + 1) {
+				fZec12[i] = 1.0f - fRec15[(i + fRec15_idx) & 63];
+			}
+			/* Vectorizable loop 19 */
+			/* Compute code */
+			for (int i = 0; i < vsize; i = i + 1) {
+				fZec19[i] = std::max<float>(0.01f, 0.2f * fZec18[i]);
+			}
+			/* Recursive loop 20 */
 			/* Pre code */
 			fYec6_idx = (fYec6_idx + fYec6_idx_save) & 255;
 			fRec34_idx = (fRec34_idx + fRec34_idx_save) & 63;
@@ -1356,7 +1366,7 @@ struct TailwindDSP {
 			/* Post code */
 			fYec6_idx_save = vsize;
 			fRec34_idx_save = vsize;
-			/* Recursive loop 19 */
+			/* Recursive loop 21 */
 			/* Pre code */
 			fRec38_idx = (fRec38_idx + fRec38_idx_save) & 63;
 			/* Compute code */
@@ -1365,67 +1375,27 @@ struct TailwindDSP {
 			}
 			/* Post code */
 			fRec38_idx_save = vsize;
-			/* Vectorizable loop 20 */
+			/* Vectorizable loop 22 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
 				iZec8[i] = 1 - iVec0[(i + iVec0_idx - 1) & 63];
 			}
-			/* Vectorizable loop 21 */
-			/* Compute code */
-			for (int i = 0; i < vsize; i = i + 1) {
-				fZec12[i] = 1.0f - fRec15[(i + fRec15_idx) & 63];
-			}
-			/* Vectorizable loop 22 */
-			/* Compute code */
-			for (int i = 0; i < vsize; i = i + 1) {
-				fZec19[i] = std::max<float>(0.01f, 0.2f * fZec18[i]);
-			}
 			/* Vectorizable loop 23 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				fZec115[i] = fRec15[(i + fRec15_idx) & 63] + fZec12[i] * std::exp(-(fConst23 / fZec19[i]));
+				fZec20[i] = fRec15[(i + fRec15_idx) & 63] + fZec12[i] * std::exp(-(fConst8 / fZec19[i]));
 			}
-			/* Vectorizable loop 24 */
-			/* Compute code */
-			for (int i = 0; i < vsize; i = i + 1) {
-				fZec88[i] = fRec15[(i + fRec15_idx) & 63] + fZec12[i] * std::exp(-(fConst19 / fZec19[i]));
-			}
-			/* Vectorizable loop 25 */
-			/* Compute code */
-			for (int i = 0; i < vsize; i = i + 1) {
-				fZec75[i] = fRec15[(i + fRec15_idx) & 63] + fZec12[i] * std::exp(-(fConst17 / fZec19[i]));
-			}
-			/* Recursive loop 26 */
+			/* Recursive loop 24 */
 			/* Pre code */
-			fRec56_idx = (fRec56_idx + fRec56_idx_save) & 63;
+			fRec43_idx = (fRec43_idx + fRec43_idx_save) & 63;
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				fZec83[i] = ((iZec8[i]) ? 0.0f : fRec56[(i + fRec56_idx - 1) & 63] + fConst18 * fRec38[(i + fRec38_idx) & 63]);
-				fRec56[(i + fRec56_idx) & 63] = fZec83[i] - std::floor(fZec83[i]);
+				fZec30[i] = ((iZec8[i]) ? 0.0f : fRec43[(i + fRec43_idx - 1) & 63] + fConst10 * fRec38[(i + fRec38_idx) & 63]);
+				fRec43[(i + fRec43_idx) & 63] = fZec30[i] - std::floor(fZec30[i]);
 			}
 			/* Post code */
-			fRec56_idx_save = vsize;
-			/* Vectorizable loop 27 */
-			/* Compute code */
-			for (int i = 0; i < vsize; i = i + 1) {
-				fZec102[i] = fRec15[(i + fRec15_idx) & 63] + fZec12[i] * std::exp(-(fConst21 / fZec19[i]));
-			}
-			/* Recursive loop 28 */
-			/* Pre code */
-			fRec62_idx = (fRec62_idx + fRec62_idx_save) & 63;
-			/* Compute code */
-			for (int i = 0; i < vsize; i = i + 1) {
-				fZec110[i] = ((iZec8[i]) ? 0.0f : fRec62[(i + fRec62_idx - 1) & 63] + fConst22 * fRec38[(i + fRec38_idx) & 63]);
-				fRec62[(i + fRec62_idx) & 63] = fZec110[i] - std::floor(fZec110[i]);
-			}
-			/* Post code */
-			fRec62_idx_save = vsize;
-			/* Vectorizable loop 29 */
-			/* Compute code */
-			for (int i = 0; i < vsize; i = i + 1) {
-				fZec48[i] = fRec15[(i + fRec15_idx) & 63] + fZec12[i] * std::exp(-(fConst13 / fZec19[i]));
-			}
-			/* Recursive loop 30 */
+			fRec43_idx_save = vsize;
+			/* Recursive loop 25 */
 			/* Pre code */
 			fRec50_idx = (fRec50_idx + fRec50_idx_save) & 63;
 			/* Compute code */
@@ -1435,17 +1405,12 @@ struct TailwindDSP {
 			}
 			/* Post code */
 			fRec50_idx_save = vsize;
-			/* Vectorizable loop 31 */
+			/* Vectorizable loop 26 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
 				fZec61[i] = fRec15[(i + fRec15_idx) & 63] + fZec12[i] * std::exp(-(fConst15 / fZec19[i]));
 			}
-			/* Vectorizable loop 32 */
-			/* Compute code */
-			for (int i = 0; i < vsize; i = i + 1) {
-				fZec35[i] = fRec15[(i + fRec15_idx) & 63] + fZec12[i] * std::exp(-(fConst11 / fZec19[i]));
-			}
-			/* Recursive loop 33 */
+			/* Recursive loop 27 */
 			/* Pre code */
 			fRec17_idx = (fRec17_idx + fRec17_idx_save) & 63;
 			/* Compute code */
@@ -1454,7 +1419,7 @@ struct TailwindDSP {
 			}
 			/* Post code */
 			fRec17_idx_save = vsize;
-			/* Recursive loop 34 */
+			/* Recursive loop 28 */
 			/* Pre code */
 			fYec2_idx = (fYec2_idx + fYec2_idx_save) & 255;
 			fRec22_idx = (fRec22_idx + fRec22_idx_save) & 63;
@@ -1467,7 +1432,27 @@ struct TailwindDSP {
 			/* Post code */
 			fYec2_idx_save = vsize;
 			fRec22_idx_save = vsize;
-			/* Recursive loop 35 */
+			/* Vectorizable loop 29 */
+			/* Compute code */
+			for (int i = 0; i < vsize; i = i + 1) {
+				fZec102[i] = fRec15[(i + fRec15_idx) & 63] + fZec12[i] * std::exp(-(fConst21 / fZec19[i]));
+			}
+			/* Recursive loop 30 */
+			/* Pre code */
+			fRec62_idx = (fRec62_idx + fRec62_idx_save) & 63;
+			/* Compute code */
+			for (int i = 0; i < vsize; i = i + 1) {
+				fZec110[i] = ((iZec8[i]) ? 0.0f : fRec62[(i + fRec62_idx - 1) & 63] + fConst22 * fRec38[(i + fRec38_idx) & 63]);
+				fRec62[(i + fRec62_idx) & 63] = fZec110[i] - std::floor(fZec110[i]);
+			}
+			/* Post code */
+			fRec62_idx_save = vsize;
+			/* Vectorizable loop 31 */
+			/* Compute code */
+			for (int i = 0; i < vsize; i = i + 1) {
+				fZec115[i] = fRec15[(i + fRec15_idx) & 63] + fZec12[i] * std::exp(-(fConst23 / fZec19[i]));
+			}
+			/* Recursive loop 32 */
 			/* Pre code */
 			fYec7_idx = (fYec7_idx + fYec7_idx_save) & 255;
 			fRec32_idx = (fRec32_idx + fRec32_idx_save) & 63;
@@ -1480,101 +1465,57 @@ struct TailwindDSP {
 			/* Post code */
 			fYec7_idx_save = vsize;
 			fRec32_idx_save = vsize;
+			/* Vectorizable loop 33 */
+			/* Compute code */
+			for (int i = 0; i < vsize; i = i + 1) {
+				fZec75[i] = fRec15[(i + fRec15_idx) & 63] + fZec12[i] * std::exp(-(fConst17 / fZec19[i]));
+			}
+			/* Recursive loop 34 */
+			/* Pre code */
+			fRec56_idx = (fRec56_idx + fRec56_idx_save) & 63;
+			/* Compute code */
+			for (int i = 0; i < vsize; i = i + 1) {
+				fZec83[i] = ((iZec8[i]) ? 0.0f : fRec56[(i + fRec56_idx - 1) & 63] + fConst18 * fRec38[(i + fRec38_idx) & 63]);
+				fRec56[(i + fRec56_idx) & 63] = fZec83[i] - std::floor(fZec83[i]);
+			}
+			/* Post code */
+			fRec56_idx_save = vsize;
+			/* Vectorizable loop 35 */
+			/* Compute code */
+			for (int i = 0; i < vsize; i = i + 1) {
+				fZec88[i] = fRec15[(i + fRec15_idx) & 63] + fZec12[i] * std::exp(-(fConst19 / fZec19[i]));
+			}
 			/* Vectorizable loop 36 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				fZec20[i] = fRec15[(i + fRec15_idx) & 63] + fZec12[i] * std::exp(-(fConst8 / fZec19[i]));
+				fZec35[i] = fRec15[(i + fRec15_idx) & 63] + fZec12[i] * std::exp(-(fConst11 / fZec19[i]));
 			}
-			/* Recursive loop 37 */
-			/* Pre code */
-			fRec43_idx = (fRec43_idx + fRec43_idx_save) & 63;
+			/* Vectorizable loop 37 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				fZec30[i] = ((iZec8[i]) ? 0.0f : fRec43[(i + fRec43_idx - 1) & 63] + fConst10 * fRec38[(i + fRec38_idx) & 63]);
-				fRec43[(i + fRec43_idx) & 63] = fZec30[i] - std::floor(fZec30[i]);
+				fZec48[i] = fRec15[(i + fRec15_idx) & 63] + fZec12[i] * std::exp(-(fConst13 / fZec19[i]));
 			}
-			/* Post code */
-			fRec43_idx_save = vsize;
 			/* Vectorizable loop 38 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				fZec116[i] = TailwindDSP_faustpower2_f(fZec115[i]);
+				fZec21[i] = TailwindDSP_faustpower2_f(fZec20[i]);
 			}
-			/* Recursive loop 39 */
-			/* Pre code */
-			fRec47_idx = (fRec47_idx + fRec47_idx_save) & 63;
-			/* Compute code */
-			for (int i = 0; i < vsize; i = i + 1) {
-				fZec43[i] = ((iZec8[i]) ? 0.0f : fRec47[(i + fRec47_idx - 1) & 63] + fConst12 * fRec38[(i + fRec38_idx) & 63]);
-				fRec47[(i + fRec47_idx) & 63] = fZec43[i] - std::floor(fZec43[i]);
-			}
-			/* Post code */
-			fRec47_idx_save = vsize;
-			/* Vectorizable loop 40 */
-			/* Compute code */
-			for (int i = 0; i < vsize; i = i + 1) {
-				iZec84[i] = std::max<int>(0, std::min<int>(int(65536.0f * fRec56[(i + fRec56_idx) & 63]), 65535));
-			}
-			/* Vectorizable loop 41 */
-			/* Compute code */
-			for (int i = 0; i < vsize; i = i + 1) {
-				fZec89[i] = TailwindDSP_faustpower2_f(fZec88[i]);
-			}
-			/* Recursive loop 42 */
-			/* Pre code */
-			fRec64_idx = (fRec64_idx + fRec64_idx_save) & 63;
-			/* Compute code */
-			for (int i = 0; i < vsize; i = i + 1) {
-				fRec64[(i + fRec64_idx) & 63] = fSlow10 + fConst2 * fRec64[(i + fRec64_idx - 1) & 63];
-			}
-			/* Post code */
-			fRec64_idx_save = vsize;
-			/* Vectorizable loop 43 */
-			/* Compute code */
-			for (int i = 0; i < vsize; i = i + 1) {
-				fZec76[i] = TailwindDSP_faustpower2_f(fZec75[i]);
-			}
-			/* Recursive loop 44 */
-			/* Pre code */
-			fRec59_idx = (fRec59_idx + fRec59_idx_save) & 63;
-			/* Compute code */
-			for (int i = 0; i < vsize; i = i + 1) {
-				fZec96[i] = ((iZec8[i]) ? 0.0f : fRec59[(i + fRec59_idx - 1) & 63] + fConst20 * fRec38[(i + fRec38_idx) & 63]);
-				fRec59[(i + fRec59_idx) & 63] = fZec96[i] - std::floor(fZec96[i]);
-			}
-			/* Post code */
-			fRec59_idx_save = vsize;
-			/* Vectorizable loop 45 */
-			/* Compute code */
-			for (int i = 0; i < vsize; i = i + 1) {
-				fZec103[i] = TailwindDSP_faustpower2_f(fZec102[i]);
-			}
-			/* Vectorizable loop 46 */
-			/* Compute code */
-			for (int i = 0; i < vsize; i = i + 1) {
-				iZec111[i] = std::max<int>(0, std::min<int>(int(65536.0f * fRec62[(i + fRec62_idx) & 63]), 65535));
-			}
-			/* Vectorizable loop 47 */
+			/* Vectorizable loop 39 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
 				fZec22[i] = std::cos(fConst9 * std::pow(0.05f, fRec17[(i + fRec17_idx) & 63]));
 			}
-			/* Vectorizable loop 48 */
-			/* Compute code */
-			for (int i = 0; i < vsize; i = i + 1) {
-				fZec49[i] = TailwindDSP_faustpower2_f(fZec48[i]);
-			}
-			/* Vectorizable loop 49 */
+			/* Vectorizable loop 40 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
 				iZec57[i] = std::max<int>(0, std::min<int>(int(65536.0f * fRec50[(i + fRec50_idx) & 63]), 65535));
 			}
-			/* Vectorizable loop 50 */
+			/* Vectorizable loop 41 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
 				fZec62[i] = TailwindDSP_faustpower2_f(fZec61[i]);
 			}
-			/* Recursive loop 51 */
+			/* Recursive loop 42 */
 			/* Pre code */
 			fRec53_idx = (fRec53_idx + fRec53_idx_save) & 63;
 			/* Compute code */
@@ -1584,12 +1525,7 @@ struct TailwindDSP {
 			}
 			/* Post code */
 			fRec53_idx_save = vsize;
-			/* Vectorizable loop 52 */
-			/* Compute code */
-			for (int i = 0; i < vsize; i = i + 1) {
-				fZec36[i] = TailwindDSP_faustpower2_f(fZec35[i]);
-			}
-			/* Recursive loop 53 */
+			/* Recursive loop 43 */
 			/* Pre code */
 			fYec3_idx = (fYec3_idx + fYec3_idx_save) & 511;
 			fRec20_idx = (fRec20_idx + fRec20_idx_save) & 63;
@@ -1602,7 +1538,46 @@ struct TailwindDSP {
 			/* Post code */
 			fYec3_idx_save = vsize;
 			fRec20_idx_save = vsize;
-			/* Recursive loop 54 */
+			/* Vectorizable loop 44 */
+			/* Compute code */
+			for (int i = 0; i < vsize; i = i + 1) {
+				fZec103[i] = TailwindDSP_faustpower2_f(fZec102[i]);
+			}
+			/* Vectorizable loop 45 */
+			/* Compute code */
+			for (int i = 0; i < vsize; i = i + 1) {
+				iZec111[i] = std::max<int>(0, std::min<int>(int(65536.0f * fRec62[(i + fRec62_idx) & 63]), 65535));
+			}
+			/* Vectorizable loop 46 */
+			/* Compute code */
+			for (int i = 0; i < vsize; i = i + 1) {
+				fZec116[i] = TailwindDSP_faustpower2_f(fZec115[i]);
+			}
+			/* Recursive loop 47 */
+			/* Pre code */
+			fRec64_idx = (fRec64_idx + fRec64_idx_save) & 63;
+			/* Compute code */
+			for (int i = 0; i < vsize; i = i + 1) {
+				fRec64[(i + fRec64_idx) & 63] = fSlow10 + fConst2 * fRec64[(i + fRec64_idx - 1) & 63];
+			}
+			/* Post code */
+			fRec64_idx_save = vsize;
+			/* Vectorizable loop 48 */
+			/* Compute code */
+			for (int i = 0; i < vsize; i = i + 1) {
+				iZec31[i] = std::max<int>(0, std::min<int>(int(65536.0f * fRec43[(i + fRec43_idx) & 63]), 65535));
+			}
+			/* Recursive loop 49 */
+			/* Pre code */
+			fRec59_idx = (fRec59_idx + fRec59_idx_save) & 63;
+			/* Compute code */
+			for (int i = 0; i < vsize; i = i + 1) {
+				fZec96[i] = ((iZec8[i]) ? 0.0f : fRec59[(i + fRec59_idx - 1) & 63] + fConst20 * fRec38[(i + fRec38_idx) & 63]);
+				fRec59[(i + fRec59_idx) & 63] = fZec96[i] - std::floor(fZec96[i]);
+			}
+			/* Post code */
+			fRec59_idx_save = vsize;
+			/* Recursive loop 50 */
 			/* Pre code */
 			fYec8_idx = (fYec8_idx + fYec8_idx_save) & 511;
 			fRec30_idx = (fRec30_idx + fRec30_idx_save) & 63;
@@ -1615,7 +1590,7 @@ struct TailwindDSP {
 			/* Post code */
 			fYec8_idx_save = vsize;
 			fRec30_idx_save = vsize;
-			/* Recursive loop 55 */
+			/* Recursive loop 51 */
 			/* Pre code */
 			fRec36_idx = (fRec36_idx + fRec36_idx_save) & 63;
 			/* Compute code */
@@ -1624,7 +1599,7 @@ struct TailwindDSP {
 			}
 			/* Post code */
 			fRec36_idx_save = vsize;
-			/* Recursive loop 56 */
+			/* Recursive loop 52 */
 			/* Pre code */
 			fRec37_idx = (fRec37_idx + fRec37_idx_save) & 63;
 			/* Compute code */
@@ -1634,136 +1609,81 @@ struct TailwindDSP {
 			}
 			/* Post code */
 			fRec37_idx_save = vsize;
-			/* Vectorizable loop 57 */
+			/* Vectorizable loop 53 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				fZec21[i] = TailwindDSP_faustpower2_f(fZec20[i]);
+				fZec76[i] = TailwindDSP_faustpower2_f(fZec75[i]);
 			}
+			/* Vectorizable loop 54 */
+			/* Compute code */
+			for (int i = 0; i < vsize; i = i + 1) {
+				iZec84[i] = std::max<int>(0, std::min<int>(int(65536.0f * fRec56[(i + fRec56_idx) & 63]), 65535));
+			}
+			/* Vectorizable loop 55 */
+			/* Compute code */
+			for (int i = 0; i < vsize; i = i + 1) {
+				fZec89[i] = TailwindDSP_faustpower2_f(fZec88[i]);
+			}
+			/* Vectorizable loop 56 */
+			/* Compute code */
+			for (int i = 0; i < vsize; i = i + 1) {
+				fZec36[i] = TailwindDSP_faustpower2_f(fZec35[i]);
+			}
+			/* Recursive loop 57 */
+			/* Pre code */
+			fRec47_idx = (fRec47_idx + fRec47_idx_save) & 63;
+			/* Compute code */
+			for (int i = 0; i < vsize; i = i + 1) {
+				fZec43[i] = ((iZec8[i]) ? 0.0f : fRec47[(i + fRec47_idx - 1) & 63] + fConst12 * fRec38[(i + fRec38_idx) & 63]);
+				fRec47[(i + fRec47_idx) & 63] = fZec43[i] - std::floor(fZec43[i]);
+			}
+			/* Post code */
+			fRec47_idx_save = vsize;
 			/* Vectorizable loop 58 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				iZec31[i] = std::max<int>(0, std::min<int>(int(65536.0f * fRec43[(i + fRec43_idx) & 63]), 65535));
+				fZec49[i] = TailwindDSP_faustpower2_f(fZec48[i]);
 			}
 			/* Vectorizable loop 59 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				fZec117[i] = 1.0f - fZec22[i] * fZec116[i];
+				fZec15[i] = std::min<float>(4095.0f, std::max<float>(1.0f, 24.0f * fRec36[(i + fRec36_idx) & 63] * (ftbl0TailwindDSPSIG0[std::max<int>(0, std::min<int>(int(65536.0f * fRec37[(i + fRec37_idx) & 63]), 65535))] + 1.0f) + 1423.0f));
 			}
-			/* Vectorizable loop 60 */
+			/* Recursive loop 60 */
+			/* Pre code */
+			fRec41_idx = (fRec41_idx + fRec41_idx_save) & 63;
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				fZec118[i] = std::max<float>(1e-06f, 1.0f - fZec116[i]);
+				fRec41[(i + fRec41_idx) & 63] = fSlow9 + fConst2 * fRec41[(i + fRec41_idx - 1) & 63];
 			}
+			/* Post code */
+			fRec41_idx_save = vsize;
 			/* Vectorizable loop 61 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				fZec85[i] = std::min<float>(4095.0f, std::max<float>(1.0f, 24.0f * fRec36[(i + fRec36_idx) & 63] * (1.0f - (0.70710677f * ftbl0TailwindDSPSIG0[iZec84[i]] + 0.70710677f * ftbl1TailwindDSPSIG1[iZec84[i]])) + 2381.0f));
+				fZec23[i] = 1.0f - fZec21[i] * fZec22[i];
 			}
 			/* Vectorizable loop 62 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				fZec90[i] = 1.0f - fZec22[i] * fZec89[i];
+				fZec24[i] = std::max<float>(1e-06f, 1.0f - fZec21[i]);
 			}
 			/* Vectorizable loop 63 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				fZec91[i] = std::max<float>(1e-06f, 1.0f - fZec89[i]);
+				fZec58[i] = std::min<float>(4095.0f, std::max<float>(1.0f, 24.0f * fRec36[(i + fRec36_idx) & 63] * (0.70710677f * ftbl1TailwindDSPSIG1[iZec57[i]] - 0.70710677f * ftbl0TailwindDSPSIG0[iZec57[i]] + 1.0f) + 2003.0f));
 			}
 			/* Vectorizable loop 64 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				fZec123[i] = std::tan(fConst24 * fRec64[(i + fRec64_idx) & 63]);
-			}
-			/* Recursive loop 65 */
-			/* Pre code */
-			fRec65_idx = (fRec65_idx + fRec65_idx_save) & 63;
-			/* Compute code */
-			for (int i = 0; i < vsize; i = i + 1) {
-				fRec65[(i + fRec65_idx) & 63] = fSlow11 + fConst2 * fRec65[(i + fRec65_idx - 1) & 63];
-			}
-			/* Post code */
-			fRec65_idx_save = vsize;
-			/* Vectorizable loop 66 */
-			/* Compute code */
-			for (int i = 0; i < vsize; i = i + 1) {
-				fZec72[i] = std::min<float>(4095.0f, std::max<float>(1.0f, 24.0f * fRec36[(i + fRec36_idx) & 63] * (1.0f - ftbl0TailwindDSPSIG0[std::max<int>(0, std::min<int>(int(65536.0f * fRec53[(i + fRec53_idx) & 63]), 65535))]) + 2179.0f));
-			}
-			/* Vectorizable loop 67 */
-			/* Compute code */
-			for (int i = 0; i < vsize; i = i + 1) {
-				fZec77[i] = 1.0f - fZec22[i] * fZec76[i];
-			}
-			/* Vectorizable loop 68 */
-			/* Compute code */
-			for (int i = 0; i < vsize; i = i + 1) {
-				fZec78[i] = std::max<float>(1e-06f, 1.0f - fZec76[i]);
-			}
-			/* Vectorizable loop 69 */
-			/* Compute code */
-			for (int i = 0; i < vsize; i = i + 1) {
-				fZec99[i] = std::min<float>(4095.0f, std::max<float>(1.0f, 24.0f * fRec36[(i + fRec36_idx) & 63] * (1.0f - ftbl1TailwindDSPSIG1[std::max<int>(0, std::min<int>(int(65536.0f * fRec59[(i + fRec59_idx) & 63]), 65535))]) + 2591.0f));
-			}
-			/* Vectorizable loop 70 */
-			/* Compute code */
-			for (int i = 0; i < vsize; i = i + 1) {
-				fZec104[i] = 1.0f - fZec22[i] * fZec103[i];
-			}
-			/* Vectorizable loop 71 */
-			/* Compute code */
-			for (int i = 0; i < vsize; i = i + 1) {
-				fZec105[i] = std::max<float>(1e-06f, 1.0f - fZec103[i]);
-			}
-			/* Vectorizable loop 72 */
-			/* Compute code */
-			for (int i = 0; i < vsize; i = i + 1) {
-				fZec112[i] = std::min<float>(4095.0f, std::max<float>(1.0f, 24.0f * fRec36[(i + fRec36_idx) & 63] * (0.70710677f * ftbl0TailwindDSPSIG0[iZec111[i]] - 0.70710677f * ftbl1TailwindDSPSIG1[iZec111[i]] + 1.0f) + 2797.0f));
-			}
-			/* Vectorizable loop 73 */
-			/* Compute code */
-			for (int i = 0; i < vsize; i = i + 1) {
-				fZec24[i] = std::max<float>(1e-06f, 1.0f - fZec21[i]);
-			}
-			/* Vectorizable loop 74 */
-			/* Compute code */
-			for (int i = 0; i < vsize; i = i + 1) {
-				fZec45[i] = std::min<float>(4095.0f, std::max<float>(1.0f, 24.0f * fRec36[(i + fRec36_idx) & 63] * (ftbl1TailwindDSPSIG1[std::max<int>(0, std::min<int>(int(65536.0f * fRec47[(i + fRec47_idx) & 63]), 65535))] + 1.0f) + 1811.0f));
-			}
-			/* Vectorizable loop 75 */
-			/* Compute code */
-			for (int i = 0; i < vsize; i = i + 1) {
-				fZec50[i] = 1.0f - fZec22[i] * fZec49[i];
-			}
-			/* Vectorizable loop 76 */
-			/* Compute code */
-			for (int i = 0; i < vsize; i = i + 1) {
-				fZec51[i] = std::max<float>(1e-06f, 1.0f - fZec49[i]);
-			}
-			/* Vectorizable loop 77 */
-			/* Compute code */
-			for (int i = 0; i < vsize; i = i + 1) {
-				fZec58[i] = std::min<float>(4095.0f, std::max<float>(1.0f, 24.0f * fRec36[(i + fRec36_idx) & 63] * (0.70710677f * ftbl1TailwindDSPSIG1[iZec57[i]] - 0.70710677f * ftbl0TailwindDSPSIG0[iZec57[i]] + 1.0f) + 2003.0f));
-			}
-			/* Vectorizable loop 78 */
-			/* Compute code */
-			for (int i = 0; i < vsize; i = i + 1) {
 				fZec63[i] = 1.0f - fZec22[i] * fZec62[i];
 			}
-			/* Vectorizable loop 79 */
+			/* Vectorizable loop 65 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
 				fZec64[i] = std::max<float>(1e-06f, 1.0f - fZec62[i]);
 			}
-			/* Vectorizable loop 80 */
-			/* Compute code */
-			for (int i = 0; i < vsize; i = i + 1) {
-				fZec37[i] = 1.0f - fZec22[i] * fZec36[i];
-			}
-			/* Vectorizable loop 81 */
-			/* Compute code */
-			for (int i = 0; i < vsize; i = i + 1) {
-				fZec38[i] = std::max<float>(1e-06f, 1.0f - fZec36[i]);
-			}
-			/* Recursive loop 82 */
+			/* Recursive loop 66 */
 			/* Pre code */
 			fYec4_idx = (fYec4_idx + fYec4_idx_save) & 511;
 			fRec18_idx = (fRec18_idx + fRec18_idx_save) & 63;
@@ -1776,7 +1696,61 @@ struct TailwindDSP {
 			/* Post code */
 			fYec4_idx_save = vsize;
 			fRec18_idx_save = vsize;
-			/* Recursive loop 83 */
+			/* Vectorizable loop 67 */
+			/* Compute code */
+			for (int i = 0; i < vsize; i = i + 1) {
+				fZec104[i] = 1.0f - fZec22[i] * fZec103[i];
+			}
+			/* Vectorizable loop 68 */
+			/* Compute code */
+			for (int i = 0; i < vsize; i = i + 1) {
+				fZec105[i] = std::max<float>(1e-06f, 1.0f - fZec103[i]);
+			}
+			/* Vectorizable loop 69 */
+			/* Compute code */
+			for (int i = 0; i < vsize; i = i + 1) {
+				fZec112[i] = std::min<float>(4095.0f, std::max<float>(1.0f, 24.0f * fRec36[(i + fRec36_idx) & 63] * (0.70710677f * ftbl0TailwindDSPSIG0[iZec111[i]] - 0.70710677f * ftbl1TailwindDSPSIG1[iZec111[i]] + 1.0f) + 2797.0f));
+			}
+			/* Vectorizable loop 70 */
+			/* Compute code */
+			for (int i = 0; i < vsize; i = i + 1) {
+				fZec117[i] = 1.0f - fZec22[i] * fZec116[i];
+			}
+			/* Vectorizable loop 71 */
+			/* Compute code */
+			for (int i = 0; i < vsize; i = i + 1) {
+				fZec118[i] = std::max<float>(1e-06f, 1.0f - fZec116[i]);
+			}
+			/* Vectorizable loop 72 */
+			/* Compute code */
+			for (int i = 0; i < vsize; i = i + 1) {
+				fZec123[i] = std::tan(fConst24 * fRec64[(i + fRec64_idx) & 63]);
+			}
+			/* Recursive loop 73 */
+			/* Pre code */
+			fRec65_idx = (fRec65_idx + fRec65_idx_save) & 63;
+			/* Compute code */
+			for (int i = 0; i < vsize; i = i + 1) {
+				fRec65[(i + fRec65_idx) & 63] = fSlow11 + fConst2 * fRec65[(i + fRec65_idx - 1) & 63];
+			}
+			/* Post code */
+			fRec65_idx_save = vsize;
+			/* Vectorizable loop 74 */
+			/* Compute code */
+			for (int i = 0; i < vsize; i = i + 1) {
+				fZec32[i] = std::min<float>(4095.0f, std::max<float>(1.0f, 24.0f * fRec36[(i + fRec36_idx) & 63] * (0.70710677f * ftbl0TailwindDSPSIG0[iZec31[i]] + 0.70710677f * ftbl1TailwindDSPSIG1[iZec31[i]] + 1.0f) + 1637.0f));
+			}
+			/* Vectorizable loop 75 */
+			/* Compute code */
+			for (int i = 0; i < vsize; i = i + 1) {
+				fZec72[i] = std::min<float>(4095.0f, std::max<float>(1.0f, 24.0f * fRec36[(i + fRec36_idx) & 63] * (1.0f - ftbl0TailwindDSPSIG0[std::max<int>(0, std::min<int>(int(65536.0f * fRec53[(i + fRec53_idx) & 63]), 65535))]) + 2179.0f));
+			}
+			/* Vectorizable loop 76 */
+			/* Compute code */
+			for (int i = 0; i < vsize; i = i + 1) {
+				fZec99[i] = std::min<float>(4095.0f, std::max<float>(1.0f, 24.0f * fRec36[(i + fRec36_idx) & 63] * (1.0f - ftbl1TailwindDSPSIG1[std::max<int>(0, std::min<int>(int(65536.0f * fRec59[(i + fRec59_idx) & 63]), 65535))]) + 2591.0f));
+			}
+			/* Recursive loop 77 */
 			/* Pre code */
 			fYec9_idx = (fYec9_idx + fYec9_idx_save) & 511;
 			fRec28_idx = (fRec28_idx + fRec28_idx_save) & 63;
@@ -1789,241 +1763,247 @@ struct TailwindDSP {
 			/* Post code */
 			fYec9_idx_save = vsize;
 			fRec28_idx_save = vsize;
+			/* Vectorizable loop 78 */
+			/* Compute code */
+			for (int i = 0; i < vsize; i = i + 1) {
+				fZec77[i] = 1.0f - fZec22[i] * fZec76[i];
+			}
+			/* Vectorizable loop 79 */
+			/* Compute code */
+			for (int i = 0; i < vsize; i = i + 1) {
+				fZec78[i] = std::max<float>(1e-06f, 1.0f - fZec76[i]);
+			}
+			/* Vectorizable loop 80 */
+			/* Compute code */
+			for (int i = 0; i < vsize; i = i + 1) {
+				fZec85[i] = std::min<float>(4095.0f, std::max<float>(1.0f, 24.0f * fRec36[(i + fRec36_idx) & 63] * (1.0f - (0.70710677f * ftbl0TailwindDSPSIG0[iZec84[i]] + 0.70710677f * ftbl1TailwindDSPSIG1[iZec84[i]])) + 2381.0f));
+			}
+			/* Vectorizable loop 81 */
+			/* Compute code */
+			for (int i = 0; i < vsize; i = i + 1) {
+				fZec90[i] = 1.0f - fZec22[i] * fZec89[i];
+			}
+			/* Vectorizable loop 82 */
+			/* Compute code */
+			for (int i = 0; i < vsize; i = i + 1) {
+				fZec91[i] = std::max<float>(1e-06f, 1.0f - fZec89[i]);
+			}
+			/* Vectorizable loop 83 */
+			/* Compute code */
+			for (int i = 0; i < vsize; i = i + 1) {
+				fZec37[i] = 1.0f - fZec22[i] * fZec36[i];
+			}
 			/* Vectorizable loop 84 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				fZec15[i] = std::min<float>(4095.0f, std::max<float>(1.0f, 24.0f * fRec36[(i + fRec36_idx) & 63] * (ftbl0TailwindDSPSIG0[std::max<int>(0, std::min<int>(int(65536.0f * fRec37[(i + fRec37_idx) & 63]), 65535))] + 1.0f) + 1423.0f));
+				fZec38[i] = std::max<float>(1e-06f, 1.0f - fZec36[i]);
 			}
-			/* Recursive loop 85 */
-			/* Pre code */
-			fRec41_idx = (fRec41_idx + fRec41_idx_save) & 63;
+			/* Vectorizable loop 85 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				fRec41[(i + fRec41_idx) & 63] = fSlow9 + fConst2 * fRec41[(i + fRec41_idx - 1) & 63];
+				fZec45[i] = std::min<float>(4095.0f, std::max<float>(1.0f, 24.0f * fRec36[(i + fRec36_idx) & 63] * (ftbl1TailwindDSPSIG1[std::max<int>(0, std::min<int>(int(65536.0f * fRec47[(i + fRec47_idx) & 63]), 65535))] + 1.0f) + 1811.0f));
 			}
-			/* Post code */
-			fRec41_idx_save = vsize;
 			/* Vectorizable loop 86 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				fZec23[i] = 1.0f - fZec21[i] * fZec22[i];
+				fZec50[i] = 1.0f - fZec22[i] * fZec49[i];
 			}
 			/* Vectorizable loop 87 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				fZec32[i] = std::min<float>(4095.0f, std::max<float>(1.0f, 24.0f * fRec36[(i + fRec36_idx) & 63] * (0.70710677f * ftbl0TailwindDSPSIG0[iZec31[i]] + 0.70710677f * ftbl1TailwindDSPSIG1[iZec31[i]] + 1.0f) + 1637.0f));
+				fZec51[i] = std::max<float>(1e-06f, 1.0f - fZec49[i]);
 			}
 			/* Vectorizable loop 88 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				fZec119[i] = std::sqrt(std::max<float>(0.0f, TailwindDSP_faustpower2_f(fZec117[i]) / TailwindDSP_faustpower2_f(fZec118[i]) + -1.0f));
+				fZec13[i] = fRec19[i] + fRec18[(i + fRec18_idx - 1) & 63];
 			}
 			/* Vectorizable loop 89 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				fZec120[i] = fZec117[i] / fZec118[i];
+				fZec14[i] = fRec29[i] + fRec28[(i + fRec28_idx - 1) & 63];
 			}
 			/* Vectorizable loop 90 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				iZec86[i] = int(fZec85[i]);
+				iZec16[i] = int(fZec15[i]);
 			}
 			/* Vectorizable loop 91 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				fZec87[i] = std::floor(fZec85[i]);
+				fZec17[i] = std::floor(fZec15[i]);
 			}
 			/* Vectorizable loop 92 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				fZec92[i] = std::sqrt(std::max<float>(0.0f, TailwindDSP_faustpower2_f(fZec90[i]) / TailwindDSP_faustpower2_f(fZec91[i]) + -1.0f));
+				fZec25[i] = std::sqrt(std::max<float>(0.0f, TailwindDSP_faustpower2_f(fZec23[i]) / TailwindDSP_faustpower2_f(fZec24[i]) + -1.0f));
 			}
 			/* Vectorizable loop 93 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				fZec93[i] = fZec90[i] / fZec91[i];
+				fZec26[i] = fZec23[i] / fZec24[i];
 			}
 			/* Vectorizable loop 94 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				fZec124[i] = 1.0f / fZec123[i];
+				fZec27[i] = std::max<float>(0.01f, 0.2f * fZec18[i] * (1.0f - 0.75f * fRec41[(i + fRec41_idx) & 63]));
 			}
 			/* Vectorizable loop 95 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				fZec126[i] = TailwindDSP_faustpower2_f(fZec123[i]);
+				iZec59[i] = int(fZec58[i]);
 			}
 			/* Vectorizable loop 96 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				fZec130[i] = std::tan(fConst24 * fRec65[(i + fRec65_idx) & 63]);
+				fZec60[i] = std::floor(fZec58[i]);
 			}
 			/* Vectorizable loop 97 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				iZec73[i] = int(fZec72[i]);
+				fZec65[i] = std::sqrt(std::max<float>(0.0f, TailwindDSP_faustpower2_f(fZec63[i]) / TailwindDSP_faustpower2_f(fZec64[i]) + -1.0f));
 			}
 			/* Vectorizable loop 98 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				fZec74[i] = std::floor(fZec72[i]);
+				fZec66[i] = fZec63[i] / fZec64[i];
 			}
 			/* Vectorizable loop 99 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				fZec79[i] = std::sqrt(std::max<float>(0.0f, TailwindDSP_faustpower2_f(fZec77[i]) / TailwindDSP_faustpower2_f(fZec78[i]) + -1.0f));
+				fZec106[i] = std::sqrt(std::max<float>(0.0f, TailwindDSP_faustpower2_f(fZec104[i]) / TailwindDSP_faustpower2_f(fZec105[i]) + -1.0f));
 			}
 			/* Vectorizable loop 100 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				fZec80[i] = fZec77[i] / fZec78[i];
+				fZec107[i] = fZec104[i] / fZec105[i];
 			}
 			/* Vectorizable loop 101 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				iZec100[i] = int(fZec99[i]);
+				iZec113[i] = int(fZec112[i]);
 			}
 			/* Vectorizable loop 102 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				fZec101[i] = std::floor(fZec99[i]);
+				fZec114[i] = std::floor(fZec112[i]);
 			}
 			/* Vectorizable loop 103 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				fZec106[i] = std::sqrt(std::max<float>(0.0f, TailwindDSP_faustpower2_f(fZec104[i]) / TailwindDSP_faustpower2_f(fZec105[i]) + -1.0f));
+				fZec119[i] = std::sqrt(std::max<float>(0.0f, TailwindDSP_faustpower2_f(fZec117[i]) / TailwindDSP_faustpower2_f(fZec118[i]) + -1.0f));
 			}
 			/* Vectorizable loop 104 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				fZec107[i] = fZec104[i] / fZec105[i];
+				fZec120[i] = fZec117[i] / fZec118[i];
 			}
 			/* Vectorizable loop 105 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				iZec113[i] = int(fZec112[i]);
+				fZec124[i] = 1.0f / fZec123[i];
 			}
 			/* Vectorizable loop 106 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				fZec114[i] = std::floor(fZec112[i]);
+				fZec126[i] = TailwindDSP_faustpower2_f(fZec123[i]);
 			}
 			/* Vectorizable loop 107 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				fZec26[i] = fZec23[i] / fZec24[i];
+				fZec130[i] = std::tan(fConst24 * fRec65[(i + fRec65_idx) & 63]);
 			}
 			/* Vectorizable loop 108 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				fZec27[i] = std::max<float>(0.01f, 0.2f * fZec18[i] * (1.0f - 0.75f * fRec41[(i + fRec41_idx) & 63]));
+				iZec33[i] = int(fZec32[i]);
 			}
 			/* Vectorizable loop 109 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				iZec46[i] = int(fZec45[i]);
+				fZec34[i] = std::floor(fZec32[i]);
 			}
 			/* Vectorizable loop 110 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				fZec47[i] = std::floor(fZec45[i]);
+				iZec73[i] = int(fZec72[i]);
 			}
 			/* Vectorizable loop 111 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				fZec52[i] = std::sqrt(std::max<float>(0.0f, TailwindDSP_faustpower2_f(fZec50[i]) / TailwindDSP_faustpower2_f(fZec51[i]) + -1.0f));
+				fZec74[i] = std::floor(fZec72[i]);
 			}
 			/* Vectorizable loop 112 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				fZec53[i] = fZec50[i] / fZec51[i];
+				iZec100[i] = int(fZec99[i]);
 			}
 			/* Vectorizable loop 113 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				iZec59[i] = int(fZec58[i]);
+				fZec101[i] = std::floor(fZec99[i]);
 			}
 			/* Vectorizable loop 114 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				fZec60[i] = std::floor(fZec58[i]);
+				fZec79[i] = std::sqrt(std::max<float>(0.0f, TailwindDSP_faustpower2_f(fZec77[i]) / TailwindDSP_faustpower2_f(fZec78[i]) + -1.0f));
 			}
 			/* Vectorizable loop 115 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				fZec65[i] = std::sqrt(std::max<float>(0.0f, TailwindDSP_faustpower2_f(fZec63[i]) / TailwindDSP_faustpower2_f(fZec64[i]) + -1.0f));
+				fZec80[i] = fZec77[i] / fZec78[i];
 			}
 			/* Vectorizable loop 116 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				fZec66[i] = fZec63[i] / fZec64[i];
+				iZec86[i] = int(fZec85[i]);
 			}
 			/* Vectorizable loop 117 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				fZec34[i] = std::floor(fZec32[i]);
+				fZec87[i] = std::floor(fZec85[i]);
 			}
 			/* Vectorizable loop 118 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				fZec39[i] = std::sqrt(std::max<float>(0.0f, TailwindDSP_faustpower2_f(fZec37[i]) / TailwindDSP_faustpower2_f(fZec38[i]) + -1.0f));
+				fZec92[i] = std::sqrt(std::max<float>(0.0f, TailwindDSP_faustpower2_f(fZec90[i]) / TailwindDSP_faustpower2_f(fZec91[i]) + -1.0f));
 			}
 			/* Vectorizable loop 119 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				fZec40[i] = fZec37[i] / fZec38[i];
+				fZec93[i] = fZec90[i] / fZec91[i];
 			}
 			/* Vectorizable loop 120 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				fZec13[i] = fRec19[i] + fRec18[(i + fRec18_idx - 1) & 63];
+				fZec39[i] = std::sqrt(std::max<float>(0.0f, TailwindDSP_faustpower2_f(fZec37[i]) / TailwindDSP_faustpower2_f(fZec38[i]) + -1.0f));
 			}
 			/* Vectorizable loop 121 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				fZec14[i] = fRec29[i] + fRec28[(i + fRec28_idx - 1) & 63];
+				fZec40[i] = fZec37[i] / fZec38[i];
 			}
 			/* Vectorizable loop 122 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				iZec16[i] = int(fZec15[i]);
+				iZec46[i] = int(fZec45[i]);
 			}
 			/* Vectorizable loop 123 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				fZec17[i] = std::floor(fZec15[i]);
+				fZec47[i] = std::floor(fZec45[i]);
 			}
 			/* Vectorizable loop 124 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				fZec25[i] = std::sqrt(std::max<float>(0.0f, TailwindDSP_faustpower2_f(fZec23[i]) / TailwindDSP_faustpower2_f(fZec24[i]) + -1.0f));
+				fZec52[i] = std::sqrt(std::max<float>(0.0f, TailwindDSP_faustpower2_f(fZec50[i]) / TailwindDSP_faustpower2_f(fZec51[i]) + -1.0f));
 			}
 			/* Vectorizable loop 125 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				iZec33[i] = int(fZec32[i]);
+				fZec53[i] = fZec50[i] / fZec51[i];
 			}
-			/* Vectorizable loop 126 */
-			/* Compute code */
-			for (int i = 0; i < vsize; i = i + 1) {
-				fZec125[i] = (fZec124[i] + -1.4142135f) / fZec123[i] + 1.0f;
-			}
-			/* Vectorizable loop 127 */
-			/* Compute code */
-			for (int i = 0; i < vsize; i = i + 1) {
-				fZec127[i] = 1.0f - 1.0f / fZec126[i];
-			}
-			/* Vectorizable loop 128 */
-			/* Compute code */
-			for (int i = 0; i < vsize; i = i + 1) {
-				fZec128[i] = (fZec124[i] + 1.4142135f) / fZec123[i] + 1.0f;
-			}
-			/* Vectorizable loop 129 */
-			/* Compute code */
-			for (int i = 0; i < vsize; i = i + 1) {
-				fZec131[i] = 1.0f / fZec130[i];
-			}
-			/* Recursive loop 130 */
+			/* Recursive loop 126 */
 			/* Pre code */
 			fYec10_idx = (fYec10_idx + fYec10_idx_save) & 8191;
 			fYec11_idx = (fYec11_idx + fYec11_idx_save) & 63;
@@ -2174,36 +2154,27 @@ struct TailwindDSP {
 			fRec9_idx_save = vsize;
 			fRec10_idx_save = vsize;
 			fRec11_idx_save = vsize;
-			/* Vectorizable loop 131 */
+			/* Vectorizable loop 127 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				fZec129[i] = fZec126[i] * fZec128[i];
+				fZec125[i] = (fZec124[i] + -1.4142135f) / fZec123[i] + 1.0f;
 			}
-			/* Vectorizable loop 132 */
+			/* Vectorizable loop 128 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				fZec132[i] = (fZec131[i] + -1.4142135f) / fZec130[i] + 1.0f;
+				fZec127[i] = 1.0f - 1.0f / fZec126[i];
 			}
-			/* Vectorizable loop 133 */
+			/* Vectorizable loop 129 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				fZec133[i] = 1.0f - 1.0f / TailwindDSP_faustpower2_f(fZec130[i]);
+				fZec128[i] = (fZec124[i] + 1.4142135f) / fZec123[i] + 1.0f;
 			}
-			/* Vectorizable loop 134 */
+			/* Vectorizable loop 130 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				fZec134[i] = (fZec131[i] + 1.4142135f) / fZec130[i] + 1.0f;
+				fZec131[i] = 1.0f / fZec130[i];
 			}
-			/* Recursive loop 135 */
-			/* Pre code */
-			fRec69_idx = (fRec69_idx + fRec69_idx_save) & 63;
-			/* Compute code */
-			for (int i = 0; i < vsize; i = i + 1) {
-				fRec69[(i + fRec69_idx) & 63] = fRec13[i] - (fZec125[i] * fRec69[(i + fRec69_idx - 2) & 63] + 2.0f * fZec127[i] * fRec69[(i + fRec69_idx - 1) & 63]) / fZec128[i];
-			}
-			/* Post code */
-			fRec69_idx_save = vsize;
-			/* Recursive loop 136 */
+			/* Recursive loop 131 */
 			/* Pre code */
 			fRec3_idx = (fRec3_idx + fRec3_idx_save) & 63;
 			/* Compute code */
@@ -2212,25 +2183,36 @@ struct TailwindDSP {
 			}
 			/* Post code */
 			fRec3_idx_save = vsize;
+			/* Vectorizable loop 132 */
+			/* Compute code */
+			for (int i = 0; i < vsize; i = i + 1) {
+				fZec129[i] = fZec126[i] * fZec128[i];
+			}
+			/* Vectorizable loop 133 */
+			/* Compute code */
+			for (int i = 0; i < vsize; i = i + 1) {
+				fZec132[i] = (fZec131[i] + -1.4142135f) / fZec130[i] + 1.0f;
+			}
+			/* Vectorizable loop 134 */
+			/* Compute code */
+			for (int i = 0; i < vsize; i = i + 1) {
+				fZec133[i] = 1.0f - 1.0f / TailwindDSP_faustpower2_f(fZec130[i]);
+			}
+			/* Vectorizable loop 135 */
+			/* Compute code */
+			for (int i = 0; i < vsize; i = i + 1) {
+				fZec134[i] = (fZec131[i] + 1.4142135f) / fZec130[i] + 1.0f;
+			}
+			/* Recursive loop 136 */
+			/* Pre code */
+			fRec69_idx = (fRec69_idx + fRec69_idx_save) & 63;
+			/* Compute code */
+			for (int i = 0; i < vsize; i = i + 1) {
+				fRec69[(i + fRec69_idx) & 63] = fRec13[i] - (fZec125[i] * fRec69[(i + fRec69_idx - 2) & 63] + 2.0f * fZec127[i] * fRec69[(i + fRec69_idx - 1) & 63]) / fZec128[i];
+			}
+			/* Post code */
+			fRec69_idx_save = vsize;
 			/* Recursive loop 137 */
-			/* Pre code */
-			fRec66_idx = (fRec66_idx + fRec66_idx_save) & 63;
-			/* Compute code */
-			for (int i = 0; i < vsize; i = i + 1) {
-				fRec66[(i + fRec66_idx) & 63] = fSlow12 + fConst2 * fRec66[(i + fRec66_idx - 1) & 63];
-			}
-			/* Post code */
-			fRec66_idx_save = vsize;
-			/* Recursive loop 138 */
-			/* Pre code */
-			fRec68_idx = (fRec68_idx + fRec68_idx_save) & 63;
-			/* Compute code */
-			for (int i = 0; i < vsize; i = i + 1) {
-				fRec68[(i + fRec68_idx) & 63] = (fRec69[(i + fRec69_idx - 2) & 63] + (fRec69[(i + fRec69_idx) & 63] - 2.0f * fRec69[(i + fRec69_idx - 1) & 63])) / fZec129[i] - (fZec132[i] * fRec68[(i + fRec68_idx - 2) & 63] + 2.0f * fZec133[i] * fRec68[(i + fRec68_idx - 1) & 63]) / fZec134[i];
-			}
-			/* Post code */
-			fRec68_idx_save = vsize;
-			/* Recursive loop 139 */
 			/* Pre code */
 			fRec1_idx = (fRec1_idx + fRec1_idx_save) & 63;
 			/* Compute code */
@@ -2239,7 +2221,7 @@ struct TailwindDSP {
 			}
 			/* Post code */
 			fRec1_idx_save = vsize;
-			/* Recursive loop 140 */
+			/* Recursive loop 138 */
 			/* Pre code */
 			fRec2_idx = (fRec2_idx + fRec2_idx_save) & 63;
 			/* Compute code */
@@ -2248,12 +2230,25 @@ struct TailwindDSP {
 			}
 			/* Post code */
 			fRec2_idx_save = vsize;
-			/* Vectorizable loop 141 */
+			/* Recursive loop 139 */
+			/* Pre code */
+			fRec66_idx = (fRec66_idx + fRec66_idx_save) & 63;
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				fZec145[i] = fRec68[(i + fRec68_idx - 2) & 63] + fRec68[(i + fRec68_idx) & 63] + 2.0f * fRec68[(i + fRec68_idx - 1) & 63];
+				fRec66[(i + fRec66_idx) & 63] = fSlow12 + fConst2 * fRec66[(i + fRec66_idx - 1) & 63];
 			}
-			/* Recursive loop 142 */
+			/* Post code */
+			fRec66_idx_save = vsize;
+			/* Recursive loop 140 */
+			/* Pre code */
+			fRec68_idx = (fRec68_idx + fRec68_idx_save) & 63;
+			/* Compute code */
+			for (int i = 0; i < vsize; i = i + 1) {
+				fRec68[(i + fRec68_idx) & 63] = (fRec69[(i + fRec69_idx - 2) & 63] + (fRec69[(i + fRec69_idx) & 63] - 2.0f * fRec69[(i + fRec69_idx - 1) & 63])) / fZec129[i] - (fZec132[i] * fRec68[(i + fRec68_idx - 2) & 63] + 2.0f * fZec133[i] * fRec68[(i + fRec68_idx - 1) & 63]) / fZec134[i];
+			}
+			/* Post code */
+			fRec68_idx_save = vsize;
+			/* Recursive loop 141 */
 			/* Pre code */
 			fRec67_idx = (fRec67_idx + fRec67_idx_save) & 63;
 			/* Compute code */
@@ -2262,70 +2257,75 @@ struct TailwindDSP {
 			}
 			/* Post code */
 			fRec67_idx_save = vsize;
-			/* Vectorizable loop 143 */
+			/* Vectorizable loop 142 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
 				fZec135[i] = 1.5707964f * fRec1[(i + fRec1_idx) & 63];
 			}
-			/* Vectorizable loop 144 */
+			/* Vectorizable loop 143 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
 				fZec137[i] = fRec2[(i + fRec2_idx - 2) & 63] + fRec2[(i + fRec2_idx) & 63] + 2.0f * fRec2[(i + fRec2_idx - 1) & 63];
 			}
-			/* Vectorizable loop 145 */
+			/* Vectorizable loop 144 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
 				fZec138[i] = TailwindDSP_faustpower2_f(7.0f * fRec66[(i + fRec66_idx) & 63] + 1.0f);
 			}
-			/* Vectorizable loop 146 */
+			/* Vectorizable loop 145 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
 				fZec139[i] = TailwindDSP_faustpower2_f(fZec134[i]);
 			}
-			/* Vectorizable loop 147 */
+			/* Vectorizable loop 146 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				fZec146[i] = fZec138[i] * TailwindDSP_faustpower2_f(fZec145[i]) / fZec139[i];
+				fZec145[i] = fRec68[(i + fRec68_idx - 2) & 63] + fRec68[(i + fRec68_idx) & 63] + 2.0f * fRec68[(i + fRec68_idx - 1) & 63];
 			}
-			/* Vectorizable loop 148 */
+			/* Vectorizable loop 147 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
 				fZec136[i] = std::cos(fZec135[i]);
 			}
-			/* Vectorizable loop 149 */
+			/* Vectorizable loop 148 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
 				fZec140[i] = TailwindDSP_faustpower2_f(fZec137[i]) * fZec138[i] / fZec139[i];
 			}
-			/* Vectorizable loop 150 */
+			/* Vectorizable loop 149 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
 				fZec141[i] = 9.0f * fZec138[i] + 27.0f;
 			}
-			/* Vectorizable loop 151 */
+			/* Vectorizable loop 150 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
 				fZec142[i] = std::sin(fZec135[i]);
 			}
-			/* Vectorizable loop 152 */
+			/* Vectorizable loop 151 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
 				fZec143[i] = fZec138[i] + 27.0f;
 			}
-			/* Vectorizable loop 153 */
+			/* Vectorizable loop 152 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
 				fZec144[i] = std::pow(1e+01f, 0.05f * fRec67[(i + fRec67_idx) & 63]);
 			}
+			/* Vectorizable loop 153 */
+			/* Compute code */
+			for (int i = 0; i < vsize; i = i + 1) {
+				fZec146[i] = fZec138[i] * TailwindDSP_faustpower2_f(fZec145[i]) / fZec139[i];
+			}
 			/* Vectorizable loop 154 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				output1[i] = FAUSTFLOAT(fZec144[i] * (fYec5[(i + fYec5_idx) & 32767] * fZec136[i] + fZec141[i] * fZec142[i] * fZec145[i] * (fZec146[i] + 27.0f) / (fZec134[i] * fZec143[i] * (9.0f * fZec146[i] + 27.0f))));
+				output0[i] = FAUSTFLOAT((fYec0[(i + fYec0_idx) & 32767] * fZec136[i] + fZec137[i] * (fZec140[i] + 27.0f) * fZec141[i] * fZec142[i] / (fZec134[i] * (9.0f * fZec140[i] + 27.0f) * fZec143[i])) * fZec144[i]);
 			}
 			/* Vectorizable loop 155 */
 			/* Compute code */
 			for (int i = 0; i < vsize; i = i + 1) {
-				output0[i] = FAUSTFLOAT((fYec0[(i + fYec0_idx) & 32767] * fZec136[i] + fZec137[i] * (fZec140[i] + 27.0f) * fZec141[i] * fZec142[i] / (fZec134[i] * (9.0f * fZec140[i] + 27.0f) * fZec143[i])) * fZec144[i]);
+				output1[i] = FAUSTFLOAT(fZec144[i] * (fYec5[(i + fYec5_idx) & 32767] * fZec136[i] + fZec141[i] * fZec142[i] * fZec145[i] * (fZec146[i] + 27.0f) / (fZec134[i] * fZec143[i] * (9.0f * fZec146[i] + 27.0f))));
 			}
 		}
 	}
@@ -2342,6 +2342,12 @@ struct TailwindDSP {
 	#define FAUST_ACTIVES 15
 	#define FAUST_PASSIVES 0
 
+	FAUST_ADDHORIZONTALSLIDER("High Cut (Hz)", fHslider11, 1.2e+04f, 1e+03f, 2e+04f, 1e+02f);
+	FAUST_ADDHORIZONTALSLIDER("Freeze", fHslider2, 1.0f, 0.6f, 1.0f, 0.01f);
+	FAUST_ADDCHECKBOX("Freeze On", fCheckbox0);
+	FAUST_ADDHORIZONTALSLIDER("Saturation", fHslider12, 0.125f, 0.0f, 0.25f, 0.01f);
+	FAUST_ADDHORIZONTALSLIDER("Input Gain", fHslider0, 0.0f, -24.0f, 24.0f, 0.1f);
+	FAUST_ADDHORIZONTALSLIDER("Output Gain", fHslider13, 0.0f, -24.0f, 24.0f, 0.1f);
 	FAUST_ADDHORIZONTALSLIDER("Mix", fHslider1, 0.5f, 0.0f, 1.0f, 0.01f);
 	FAUST_ADDHORIZONTALSLIDER("Decay", fHslider3, 0.85f, 0.1f, 0.99f, 0.001f);
 	FAUST_ADDHORIZONTALSLIDER("Pre-Delay (ms)", fHslider5, 2e+01f, 0.0f, 5e+02f, 1.0f);
@@ -2351,14 +2357,14 @@ struct TailwindDSP {
 	FAUST_ADDHORIZONTALSLIDER("Mod Rate (Hz)", fHslider8, 0.8f, 0.1f, 5.0f, 0.01f);
 	FAUST_ADDHORIZONTALSLIDER("Mod Depth", fHslider7, 0.3f, 0.0f, 1.0f, 0.01f);
 	FAUST_ADDHORIZONTALSLIDER("Low Cut (Hz)", fHslider10, 8e+01f, 2e+01f, 5e+02f, 1.0f);
-	FAUST_ADDHORIZONTALSLIDER("High Cut (Hz)", fHslider11, 1.2e+04f, 1e+03f, 2e+04f, 1e+02f);
-	FAUST_ADDHORIZONTALSLIDER("Freeze", fHslider2, 1.0f, 0.6f, 1.0f, 0.01f);
-	FAUST_ADDCHECKBOX("Freeze On", fCheckbox0);
-	FAUST_ADDHORIZONTALSLIDER("Saturation", fHslider12, 0.125f, 0.0f, 0.25f, 0.01f);
-	FAUST_ADDHORIZONTALSLIDER("Input Gain", fHslider0, 0.0f, -24.0f, 24.0f, 0.1f);
-	FAUST_ADDHORIZONTALSLIDER("Output Gain", fHslider13, 0.0f, -24.0f, 24.0f, 0.1f);
 
 	#define FAUST_LIST_ACTIVES(p) \
+		p(HORIZONTALSLIDER, High_Cut_(Hz), "High Cut (Hz)", fHslider11, 1.2e+04f, 1e+03f, 2e+04f, 1e+02f) \
+		p(HORIZONTALSLIDER, Freeze, "Freeze", fHslider2, 1.0f, 0.6f, 1.0f, 0.01f) \
+		p(CHECKBOX, Freeze_On, "Freeze On", fCheckbox0, 0.0f, 0.0f, 1.0f, 1.0f) \
+		p(HORIZONTALSLIDER, Saturation, "Saturation", fHslider12, 0.125f, 0.0f, 0.25f, 0.01f) \
+		p(HORIZONTALSLIDER, Input_Gain, "Input Gain", fHslider0, 0.0f, -24.0f, 24.0f, 0.1f) \
+		p(HORIZONTALSLIDER, Output_Gain, "Output Gain", fHslider13, 0.0f, -24.0f, 24.0f, 0.1f) \
 		p(HORIZONTALSLIDER, Mix, "Mix", fHslider1, 0.5f, 0.0f, 1.0f, 0.01f) \
 		p(HORIZONTALSLIDER, Decay, "Decay", fHslider3, 0.85f, 0.1f, 0.99f, 0.001f) \
 		p(HORIZONTALSLIDER, Pre-Delay_(ms), "Pre-Delay (ms)", fHslider5, 2e+01f, 0.0f, 5e+02f, 1.0f) \
@@ -2368,12 +2374,6 @@ struct TailwindDSP {
 		p(HORIZONTALSLIDER, Mod_Rate_(Hz), "Mod Rate (Hz)", fHslider8, 0.8f, 0.1f, 5.0f, 0.01f) \
 		p(HORIZONTALSLIDER, Mod_Depth, "Mod Depth", fHslider7, 0.3f, 0.0f, 1.0f, 0.01f) \
 		p(HORIZONTALSLIDER, Low_Cut_(Hz), "Low Cut (Hz)", fHslider10, 8e+01f, 2e+01f, 5e+02f, 1.0f) \
-		p(HORIZONTALSLIDER, High_Cut_(Hz), "High Cut (Hz)", fHslider11, 1.2e+04f, 1e+03f, 2e+04f, 1e+02f) \
-		p(HORIZONTALSLIDER, Freeze, "Freeze", fHslider2, 1.0f, 0.6f, 1.0f, 0.01f) \
-		p(CHECKBOX, Freeze_On, "Freeze On", fCheckbox0, 0.0f, 0.0f, 1.0f, 1.0f) \
-		p(HORIZONTALSLIDER, Saturation, "Saturation", fHslider12, 0.125f, 0.0f, 0.25f, 0.01f) \
-		p(HORIZONTALSLIDER, Input_Gain, "Input Gain", fHslider0, 0.0f, -24.0f, 24.0f, 0.1f) \
-		p(HORIZONTALSLIDER, Output_Gain, "Output Gain", fHslider13, 0.0f, -24.0f, 24.0f, 0.1f) \
 
 	#define FAUST_LIST_PASSIVES(p) \
 

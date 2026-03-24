@@ -91,13 +91,13 @@ def extract_params(ui_items: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return params
 
 
-def get_sort_key(param: dict[str, Any]) -> str:
-    """Extract the numeric ordering key from metadata (e.g. '01', '02')."""
+def get_sort_key(param: dict[str, Any]) -> int:
+    """Extract the numeric ordering key from metadata (e.g. '1', '2')."""
     for meta_entry in param.get("meta", []):
         for key in meta_entry:
             if key.isdigit():
-                return key
-    return "99"
+                return int(key)
+    return 99
 
 
 # ---------------------------------------------------------------------------

@@ -18,24 +18,24 @@ import("stdfaust.lib");
 // PARAMETERS
 // ============================================================================
 
-mix          = hslider("[01][id:mix] Mix", 0.5, 0.0, 1.0, 0.01) : si.smoo;
-decay        = hslider("[02][id:decay] Decay", 0.85, 0.1, 0.99, 0.001) : si.smoo;
-predelay_ms  = hslider("[03][id:pre_delay_ms] Pre-Delay (ms)", 20, 0, 500, 1) : si.smoo;
-diffusion    = hslider("[04][id:diffusion] Diffusion", 0.7, 0.0, 1.0, 0.01) : si.smoo;
-hf_damp      = hslider("[05][id:damping] Damping", 0.5, 0.0, 1.0, 0.01) : si.smoo;
-lf_damp      = hslider("[06][id:low_damp] Low Damp", 0.2, 0.0, 1.0, 0.01) : si.smoo;
-mod_rate     = hslider("[07][id:mod_rate_hz] Mod Rate (Hz)", 0.8, 0.1, 5.0, 0.01) : si.smoo;
-mod_depth    = hslider("[08][id:mod_depth] Mod Depth", 0.3, 0.0, 1.0, 0.01) : si.smoo;
-low_cut_freq = hslider("[09][id:low_cut_hz] Low Cut (Hz)", 80, 20, 500, 1) : si.smoo;
-high_cut_freq= hslider("[10][id:high_cut_hz] High Cut (Hz)", 12000, 1000, 20000, 100) : si.smoo;
-freeze_amt   = hslider("[11][id:freeze] Freeze", 1.0, 0.6, 1.0, 0.01);
-freeze_on    = checkbox("[12][id:freeze_on] Freeze On");
-freeze       = freeze_amt * freeze_on : si.smoo;
-saturation   = hslider("[13][id:saturation] Saturation", 0.125, 0.0, 0.25, 0.01) : si.smoo;
-input_gain_db = hslider("[14][id:input_gain_db] Input Gain", 0.0, -24.0, 24.0, 0.1) : si.smoo;
+mix            = hslider("[1][id:mix] Mix", 0.5, 0.0, 1.0, 0.01) : si.smoo;
+decay          = hslider("[2][id:decay] Decay", 0.85, 0.1, 0.99, 0.001) : si.smoo;
+predelay_ms    = hslider("[3][id:pre_delay_ms] Pre-Delay (ms)", 20, 0, 500, 1) : si.smoo;
+diffusion      = hslider("[4][id:diffusion] Diffusion", 0.7, 0.0, 1.0, 0.01) : si.smoo;
+hf_damp        = hslider("[5][id:damping] Damping", 0.5, 0.0, 1.0, 0.01) : si.smoo;
+lf_damp        = hslider("[6][id:low_damp] Low Damp", 0.2, 0.0, 1.0, 0.01) : si.smoo;
+mod_rate       = hslider("[7][id:mod_rate_hz] Mod Rate (Hz)", 0.8, 0.1, 5.0, 0.01) : si.smoo;
+mod_depth      = hslider("[8][id:mod_depth] Mod Depth", 0.3, 0.0, 1.0, 0.01) : si.smoo;
+low_cut_freq   = hslider("[9][id:low_cut_hz] Low Cut (Hz)", 80, 20, 500, 1) : si.smoo;
+high_cut_freq  = hslider("[10][id:high_cut_hz] High Cut (Hz)", 12000, 1000, 20000, 100) : si.smoo;
+freeze_amt     = hslider("[11][id:freeze] Freeze", 1.0, 0.6, 1.0, 0.01);
+freeze_on      = checkbox("[12][id:freeze_on] Freeze On");
+freeze         = freeze_amt * freeze_on : si.smoo;
+saturation     = hslider("[13][id:saturation] Saturation", 0.125, 0.0, 0.25, 0.01) : si.smoo;
+input_gain_db  = hslider("[14][id:input_gain_db] Input Gain", 0.0, -24.0, 24.0, 0.1) : si.smoo;
 output_gain_db = hslider("[15][id:output_gain_db] Output Gain", 0.0, -24.0, 24.0, 0.1) : si.smoo;
-input_gain = ba.db2linear(input_gain_db);
-output_gain = ba.db2linear(output_gain_db);
+input_gain     = ba.db2linear(input_gain_db);
+output_gain    = ba.db2linear(output_gain_db);
 
 // ============================================================================
 // UTILITIES
