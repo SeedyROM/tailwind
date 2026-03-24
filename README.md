@@ -4,7 +4,8 @@ BigSky-inspired long tail reverb plugin.
 
 [![Build](https://github.com/SeedyROM/tailwind/actions/workflows/build.yml/badge.svg)](https://github.com/SeedyROM/tailwind/actions/workflows/build.yml)
 
-<img width="1083" height="644" alt="Screenshot 2026-03-23 at 2 45 31 AM" src="https://github.com/user-attachments/assets/5b45e59f-2a45-4f97-b9cc-b860e12a723e" />
+<img width="761" height="519" alt="Screenshot 2026-03-24 at 12 02 43 AM" src="https://github.com/user-attachments/assets/2b6be1eb-b122-4d77-b1d3-b8095188286a" />
+
 <br />
 <br />
 
