@@ -97,6 +97,8 @@ void TailwindAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBloc
   currentSampleRate = sampleRate;
   inputMeterPeak.store(0.0f);
   outputMeterPeak.store(0.0f);
+  meterSamplesSinceLastUpdate = 0;
+  meterUpdateIntervalSamples = juce::jmax(256, samplesPerBlock);
   faustBridge.prepare(sampleRate, samplesPerBlock);
 }
 
@@ -386,15 +388,22 @@ void TailwindAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
       juce::Decibels::decibelsToGain(inputGainDb != nullptr ? inputGainDb->load() : 0.0f);
   juce::ignoreUnused(outputGainDb);
 
-  updatePeakMeter(inputMeterPeak,
-                  juce::jlimit(0.0f, 1.2f, getMaxPeak(totalNumInputChannels) * inputGainLinear),
-                  buffer.getNumSamples());
+  meterSamplesSinceLastUpdate += buffer.getNumSamples();
+  const bool shouldMeasurePeaks = meterSamplesSinceLastUpdate >= meterUpdateIntervalSamples;
+  if (shouldMeasurePeaks) {
+    updatePeakMeter(inputMeterPeak,
+                    juce::jlimit(0.0f, 1.2f, getMaxPeak(totalNumInputChannels) * inputGainLinear),
+                    meterSamplesSinceLastUpdate);
+  }
 
   faustBridge.process(buffer, totalNumInputChannels, totalNumOutputChannels);
 
-  updatePeakMeter(outputMeterPeak,
-                  juce::jlimit(0.0f, 1.2f, getMaxPeak(totalNumOutputChannels)),
-                  buffer.getNumSamples());
+  if (shouldMeasurePeaks) {
+    updatePeakMeter(outputMeterPeak,
+                    juce::jlimit(0.0f, 1.2f, getMaxPeak(totalNumOutputChannels)),
+                    meterSamplesSinceLastUpdate);
+    meterSamplesSinceLastUpdate = 0;
+  }
 }
 
 bool TailwindAudioProcessor::hasEditor() const {

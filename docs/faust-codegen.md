@@ -34,7 +34,8 @@ The Faust compiler emits a JSON file containing the full UI tree -- parameter na
 
 - **Parameter IDs**: `"[01] Mix"` becomes `FaustParamIDs::mix` (`"mix"`)
 - **APVTS layout**: Creates `AudioParameterFloat` / `AudioParameterBool` entries with the correct ranges
-- **Bridge sync**: Maps each APVTS parameter to its Faust zone variable (`dsp_.fHslider0 = *apvts_.getRawParameterValue(FaustParamIDs::mix)`)
+- **Bridge sync**: Caches APVTS parameter atomics once, then maps each value to Faust zones each block (`dsp_.fHslider0 = loadParam(mixParam_)`)
+- **In-place fast path**: Processes directly on host buffers when channel layouts allow; falls back to scratch buffers otherwise
 - **Typed getters**: `float getMix()`, `bool getFreezeOn()`, etc.
 
 The naming convention uses camelCase for parameter IDs and PascalCase for getter methods, derived from the Faust label text.

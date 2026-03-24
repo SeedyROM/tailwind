@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.22)
 
 project(Tailwind VERSION 0.1.0)
 
+include(CheckIPOSupported)
+
 # Suppress developer warnings from JUCE
 set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS ON CACHE INTERNAL "")
 
@@ -13,6 +15,7 @@ option(TAILWIND_COPY_AFTER_BUILD "Copy plugin to system dirs after build" ON)
 option(TAILWIND_USE_MARCH_NATIVE "Use -march=native (disable for distributable builds)" ON)
 option(TAILWIND_ENABLE_CODEGEN "Run Faust codegen (requires faust on PATH)" ON)
 option(TAILWIND_ENABLE_VST2 "Enable legacy VST2 builds when the SDK is available" OFF)
+option(TAILWIND_ENABLE_IPO "Enable interprocedural optimization/LTO in Release" ON)
 set(TAILWIND_FORMATS "VST3 AU Standalone" CACHE STRING "Space-separated list of plugin formats to build")
 
 if(TAILWIND_ENABLE_VST2)
@@ -111,6 +114,16 @@ if(TARGET faust_codegen)
     add_dependencies(Tailwind faust_codegen)
 endif()
 
+if(TAILWIND_ENABLE_IPO)
+    check_ipo_supported(RESULT TAILWIND_IPO_SUPPORTED OUTPUT TAILWIND_IPO_ERROR)
+    if(TAILWIND_IPO_SUPPORTED)
+        set_property(TARGET Tailwind PROPERTY INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE)
+        message(STATUS "IPO/LTO enabled for Release builds")
+    else()
+        message(STATUS "IPO/LTO unavailable: ${TAILWIND_IPO_ERROR}")
+    endif()
+endif()
+
 # Add binary resources (fonts, images, etc)
 juce_add_binary_data(TailwindAssets SOURCES
     assets/images/logo.png
@@ -157,6 +170,8 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
         # Release-only optimizations
         $<$<CONFIG:Release>:-O3>
         $<$<CONFIG:Release>:-ffast-math>
+        $<$<CONFIG:Release>:-ffp-contract=fast>
+        $<$<CONFIG:Release>:-fno-math-errno>
         $<$<CONFIG:Release>:-funroll-loops>
     )
 
@@ -191,6 +206,9 @@ elseif(MSVC)
     target_compile_options(Tailwind PRIVATE
         $<$<CONFIG:Release>:/O2>
         $<$<CONFIG:Release>:/fp:fast>
+        $<$<CONFIG:Release>:/Oi>
+        $<$<CONFIG:Release>:/Gy>
+        $<$<CONFIG:Release>:/Gw>
     )
     if(TAILWIND_USE_MARCH_NATIVE)
         target_compile_options(Tailwind PRIVATE
