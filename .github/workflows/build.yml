@@ -179,11 +179,6 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Checkout (with tags)
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
       - name: Determine release tag
         id: version
         run: |
@@ -193,21 +188,37 @@ jobs:
             echo "tag=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Validate release tag exists
+      - name: Ensure release tag exists
         if: github.event_name == 'workflow_dispatch'
-        run: |
-          TAG="${{ steps.version.outputs.tag }}"
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const tag = '${{ steps.version.outputs.tag }}'
+            const format = /^v\d+\.\d+\.\d+([-.].+)?$/
 
-          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([-.].+)?$ ]]; then
-            echo "Error: tag '$TAG' is not in expected format (e.g. v0.2.0 or v0.2.0-rc1)."
-            exit 1
-          fi
+            if (!format.test(tag)) {
+              core.setFailed(`Tag '${tag}' is not in expected format (e.g. v0.2.0 or v0.2.0-rc1).`)
+              return
+            }
 
-          if ! git rev-parse --verify "refs/tags/$TAG" >/dev/null 2>&1; then
-            echo "Error: tag '$TAG' does not exist in repository."
-            echo "Create and push it first: git tag -a $TAG -m 'Tailwind $TAG' && git push origin $TAG"
-            exit 1
-          fi
+            const owner = context.repo.owner
+            const repo = context.repo.repo
+            const ref = `tags/${tag}`
+
+            try {
+              await github.rest.git.getRef({ owner, repo, ref })
+              core.info(`Tag '${tag}' already exists.`)
+            } catch (error) {
+              if (error.status !== 404) throw error
+
+              await github.rest.git.createRef({
+                owner,
+                repo,
+                ref: `refs/tags/${tag}`,
+                sha: context.sha
+              })
+              core.info(`Created tag '${tag}' at ${context.sha}.`)
+            }
 
       - name: Download all artifacts
         uses: actions/download-artifact@v8
