@@ -4,6 +4,17 @@
 
 namespace {
 
+constexpr auto topBarButtonComponentId = "topbarABButton";
+constexpr auto topBarPresetComponentId = "topbarPresetBox";
+
+bool isTopBarButton(const juce::Button& button) {
+  return button.getComponentID() == topBarButtonComponentId;
+}
+
+bool isTopBarPreset(const juce::ComboBox& box) {
+  return box.getComponentID() == topBarPresetComponentId;
+}
+
 class TailwindSliderLabel : public juce::Label {
 public:
   void editorShown(juce::TextEditor* editor) override {
@@ -41,6 +52,16 @@ TailwindLookAndFeel::TailwindLookAndFeel() {
   setColour(juce::TextEditor::backgroundColourId, juce::Colours::transparentBlack);
   setColour(juce::TextEditor::outlineColourId, juce::Colours::transparentBlack);
   setColour(juce::TextEditor::textColourId, juce::Colour(TailwindColors::valueText));
+
+  setColour(juce::ComboBox::textColourId, juce::Colour(TailwindColors::labelText));
+  setColour(juce::ComboBox::outlineColourId, juce::Colour(TailwindColors::panelBorder));
+  setColour(juce::ComboBox::arrowColourId, juce::Colour(TailwindColors::accentBright));
+
+  setColour(juce::PopupMenu::backgroundColourId, juce::Colour(TailwindColors::panelBg));
+  setColour(juce::PopupMenu::textColourId, juce::Colour(TailwindColors::labelText));
+  setColour(juce::PopupMenu::highlightedBackgroundColourId,
+            juce::Colour(TailwindColors::accentWarm).withAlpha(0.24f));
+  setColour(juce::PopupMenu::highlightedTextColourId, juce::Colour(TailwindColors::accentBright));
 }
 
 void TailwindLookAndFeel::drawRotarySlider(juce::Graphics& g,
@@ -297,8 +318,143 @@ juce::Slider::SliderLayout TailwindLookAndFeel::getSliderLayout(juce::Slider& sl
   return layout;
 }
 
+void TailwindLookAndFeel::drawButtonBackground(juce::Graphics& g,
+                                               juce::Button& button,
+                                               const juce::Colour& backgroundColour,
+                                               bool shouldDrawButtonAsHighlighted,
+                                               bool shouldDrawButtonAsDown) {
+  if (!isTopBarButton(button)) {
+    LookAndFeel_V4::drawButtonBackground(
+        g, button, backgroundColour, shouldDrawButtonAsHighlighted, shouldDrawButtonAsDown);
+    return;
+  }
+
+  auto bounds = button.getLocalBounds().toFloat().reduced(0.5f);
+  const auto cornerSize = 4.5f;
+  const bool isOn = button.getToggleState();
+  const bool isPressed = isOn || shouldDrawButtonAsDown;
+
+  juce::ColourGradient fillGradient(
+      isPressed ? juce::Colour(TailwindColors::accentWarm).withAlpha(0.26f)
+                : juce::Colour(TailwindColors::panelBg).brighter(0.09f),
+      0.0f,
+      bounds.getY(),
+      isPressed ? juce::Colour(TailwindColors::accentWarm).withAlpha(0.14f)
+                : juce::Colour(TailwindColors::panelBg).brighter(0.02f),
+      0.0f,
+      bounds.getBottom(),
+      false);
+  g.setGradientFill(fillGradient);
+  g.fillRoundedRectangle(bounds, cornerSize);
+
+  auto borderColour = isPressed ? juce::Colour(TailwindColors::accentWarm)
+                                : juce::Colour(TailwindColors::panelBorder).brighter(0.12f);
+  if (shouldDrawButtonAsHighlighted && !isPressed)
+    borderColour = borderColour.brighter(0.25f);
+
+  g.setColour(borderColour);
+  g.drawRoundedRectangle(bounds, cornerSize, 1.0f);
+
+  if (shouldDrawButtonAsHighlighted && !isPressed) {
+    g.setColour(juce::Colour(0x14ffffff));
+    g.fillRoundedRectangle(bounds.reduced(1.0f), cornerSize - 0.8f);
+  }
+}
+
+void TailwindLookAndFeel::drawButtonText(juce::Graphics& g,
+                                         juce::TextButton& button,
+                                         bool shouldDrawButtonAsHighlighted,
+                                         bool shouldDrawButtonAsDown) {
+  if (!isTopBarButton(button)) {
+    LookAndFeel_V4::drawButtonText(
+        g, button, shouldDrawButtonAsHighlighted, shouldDrawButtonAsDown);
+    return;
+  }
+
+  const bool isOn = button.getToggleState() || shouldDrawButtonAsDown;
+  auto textColour =
+      isOn ? juce::Colour(TailwindColors::accentBright) : juce::Colour(TailwindColors::labelText);
+
+  if (shouldDrawButtonAsHighlighted && !isOn)
+    textColour = textColour.brighter(0.15f);
+
+  g.setColour(textColour);
+  g.setFont(getTextButtonFont(button, button.getHeight()));
+  g.drawFittedText(button.getButtonText(),
+                   button.getLocalBounds().reduced(2, 0),
+                   juce::Justification::centred,
+                   1);
+}
+
+void TailwindLookAndFeel::drawComboBox(juce::Graphics& g,
+                                       int width,
+                                       int height,
+                                       bool isButtonDown,
+                                       int buttonX,
+                                       int buttonY,
+                                       int buttonW,
+                                       int buttonH,
+                                       juce::ComboBox& box) {
+  if (!isTopBarPreset(box)) {
+    LookAndFeel_V4::drawComboBox(
+        g, width, height, isButtonDown, buttonX, buttonY, buttonW, buttonH, box);
+    return;
+  }
+
+  auto bounds =
+      juce::Rectangle<float>(0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height))
+          .reduced(0.5f);
+  const auto cornerSize = 4.5f;
+  const bool highlighted = box.isMouseOver(true);
+  const bool active = isButtonDown || box.hasKeyboardFocus(true) || box.isPopupActive();
+
+  juce::ColourGradient fillGradient(active ? juce::Colour(TailwindColors::panelBg).brighter(0.15f)
+                                           : juce::Colour(TailwindColors::panelBg).brighter(0.1f),
+                                    0.0f,
+                                    bounds.getY(),
+                                    juce::Colour(TailwindColors::panelBg).brighter(0.03f),
+                                    0.0f,
+                                    bounds.getBottom(),
+                                    false);
+  g.setGradientFill(fillGradient);
+  g.fillRoundedRectangle(bounds, cornerSize);
+
+  g.setColour(active
+                  ? juce::Colour(TailwindColors::accentWarm)
+                  : juce::Colour(TailwindColors::panelBorder).brighter(highlighted ? 0.25f : 0.1f));
+  g.drawRoundedRectangle(bounds, cornerSize, 1.0f);
+
+  auto arrowZone = juce::Rectangle<float>(static_cast<float>(buttonX),
+                                          static_cast<float>(buttonY),
+                                          static_cast<float>(buttonW),
+                                          static_cast<float>(buttonH));
+  g.setColour(juce::Colour(TailwindColors::panelBorder).withAlpha(0.8f));
+  g.drawLine(arrowZone.getX(),
+             arrowZone.getY() + 3.0f,
+             arrowZone.getX(),
+             arrowZone.getBottom() - 3.0f,
+             1.0f);
+
+  juce::Path arrow;
+  const auto arrowCentreX = arrowZone.getCentreX();
+  const auto arrowCentreY = arrowZone.getCentreY() + 0.5f;
+  constexpr float arrowHalfWidth = 4.0f;
+  constexpr float arrowHeight = 2.8f;
+  arrow.startNewSubPath(arrowCentreX - arrowHalfWidth, arrowCentreY - 1.0f);
+  arrow.lineTo(arrowCentreX, arrowCentreY + arrowHeight);
+  arrow.lineTo(arrowCentreX + arrowHalfWidth, arrowCentreY - 1.0f);
+
+  g.setColour(active ? juce::Colour(TailwindColors::accentBright)
+                     : juce::Colour(TailwindColors::labelText));
+  g.strokePath(
+      arrow,
+      juce::PathStrokeType(1.6f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+}
+
 juce::Font TailwindLookAndFeel::getTextButtonFont(juce::TextButton& button, int buttonHeight) {
-  juce::ignoreUnused(button);
+  if (button.getComponentID() == topBarButtonComponentId)
+    return juce::Font(13.0f, juce::Font::bold);
+
   return juce::Font(static_cast<float>(juce::jmax(10, buttonHeight - 12)), juce::Font::bold);
 }
 

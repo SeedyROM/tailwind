@@ -122,6 +122,7 @@ void TailwindAudioProcessorEditor::promptSavePreset() {
 
 void TailwindAudioProcessorEditor::showOptionsMenu() {
   juce::PopupMenu menu;
+  menu.setLookAndFeel(&tailwindLnf);
   menu.addItem(1, "Copy A to B");
   menu.addItem(2, "Copy B to A");
   menu.addItem(3, "Clear A/B", audioProcessor.hasDistinctABState());

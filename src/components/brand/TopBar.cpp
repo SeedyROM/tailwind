@@ -21,6 +21,7 @@ TopBar::TopBar() {
   };
 
   addAndMakeVisible(presetBox);
+  presetBox.setComponentID("topbarPresetBox");
   presetBox.setTextWhenNothingSelected("Preset");
   presetBox.onChange = [this] {
     if (onPresetSelected)
@@ -28,8 +29,11 @@ TopBar::TopBar() {
   };
 
   configureButton(slotAButton);
+  slotAButton.setComponentID("topbarABButton");
   configureButton(slotBButton);
+  slotBButton.setComponentID("topbarABButton");
   configureButton(optionsButton);
+  optionsButton.setComponentID("topbarABButton");
 
   slotAButton.onClick = [this] {
     if (onSelectSlotA)
