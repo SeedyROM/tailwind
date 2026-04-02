@@ -37,11 +37,19 @@ output_gain_db = hslider("[15][id:output_gain_db] Output Gain", 0.0, -24.0, 24.0
 input_gain     = ba.db2linear(input_gain_db);
 output_gain    = ba.db2linear(output_gain_db);
 
+echo_on       = checkbox("[16][id:echo_on] Echo On") : si.smoo;
+echo_pre_fdn  = checkbox("[17][id:echo_pre_fdn] Echo Pre-FDN");
+echo_time_ms  = hslider("[18][id:echo_time_ms] Echo Time (ms)", 250, 1, 1000, 1) : si.smoo;
+echo_feedback = hslider("[19][id:echo_feedback] Echo Feedback", 0.4, 0.0, 0.95, 0.01) : si.smoo;
+echo_color    = hslider("[20][id:echo_color] Echo Color", 0.0, 0.0, 1.0, 0.01) : si.smoo;
+echo_mix      = hslider("[21][id:echo_mix] Echo Mix", 0.5, 0.0, 1.0, 0.01) : si.smoo;
+
 // ============================================================================
 // UTILITIES
 // ============================================================================
 
-MAX_PRE_DELAY = 24000;
+MAX_PRE_DELAY  = 24000;
+MAX_ECHO_DELAY = 48000; // 1000 ms @ 48 kHz
 ms2samp(ms) = ms * ma.SR / 1000.0;
 
 // Equal-power crossfade
@@ -205,14 +213,77 @@ with {
 };
 
 // ============================================================================
+// ECHO MODULE — Stereo Ping-Pong Delay with Tape Color
+// ============================================================================
+//
+// Signal flow (stereo ping-pong):
+//   L delay input = inL + R feedback * echo_feedback  (bounces L→R→L)
+//   R delay input = inR + L feedback * echo_feedback
+//
+// Tape color runs on the delay OUTPUT each cycle, so degradation accumulates
+// with every repeat. echo_color=0 is clean; echo_color=1 is Echoplex-style.
+//
+// Position toggle (echo_pre_fdn):
+//   1 = pre-FDN:  echo output injected before diffusers (repeats get reverb)
+//   0 = post-FDN: echo output injected after FDN (reverb tail is echoed)
+
+// HF cutoff sweeps 20 kHz (color=0) → 1 kHz (color=1)
+echo_hf_freq = 20000.0 * (1000.0/20000.0) ^ echo_color;
+
+// Unity-gain soft saturation: fast_tanh(x*drive)/drive keeps small-signal
+// gain at 1.0 while compressing peaks — safe inside a feedback loop.
+echo_fb_sat(x) = fast_tanh(x * drive) / drive
+with { drive = 1.0 + echo_color * 3.0; };
+
+// Tape color chain: HF LP filter followed by soft saturation.
+// Used twice in echo_body (outL and outR) — each reference is an independent
+// circuit instance with its own filter state.
+echo_fb_color = special_lp(0.707, echo_hf_freq) : echo_fb_sat;
+
+// Ping-pong delay core: returns (wetL, wetR)
+echo_module(inL, inR) = (echo_body(inL, inR) ~ si.bus(2)) : par(i, 2, !), _, _
+with {
+    echo_body(iL, iR, fbL, fbR) = outL, outR, outL, outR
+    with {
+        dt   = ms2samp(echo_time_ms) : max(1) : min(MAX_ECHO_DELAY - 1);
+        outL = (iL + fbR*echo_feedback) : de.fdelay(MAX_ECHO_DELAY, dt) : echo_fb_color;
+        outR = (iR + fbL*echo_feedback) : de.fdelay(MAX_ECHO_DELAY, dt) : echo_fb_color;
+    };
+};
+
+// ============================================================================
 // MAIN PROCESS
 // ============================================================================
 
-// Stereo in → input trim → split dry/wet → FDN → EQ → saturate → mix → output trim
-process = _, _ : par(i, 2, *(input_gain)) <: wet_path, dry_path : interleave_mix : par(i, 2, *(output_gain))
+// Stereo in → input trim → split dry/wet → echo (pre or post FDN) → EQ → saturate → mix → output trim
+process = _, _ : par(i, 2, *(input_gain)) <: wet_path, si.bus(2) : interleave_mix : par(i, 2, *(output_gain))
 with {
-    wet_path = par(i, 2, predelay) : diffuser_L, diffuser_R
-             : fdn_tank : par(i, 2, output_eq : output_saturate);
-    dry_path = si.bus(2);
+    wet_path(inL, inR) = (post_fdn_L, post_fdn_R) : par(i, 2, output_eq : output_saturate)
+    with {
+        // Post-predelay signals — echo always reads from here
+        pdL = inL : predelay;
+        pdR = inR : predelay;
+
+        // Echo wet output (computed once, injected at pre or post FDN position)
+        echo_stereo = echo_module(pdL, pdR);
+        echoL = echo_stereo : _, !;
+        echoR = echo_stereo : !, _;
+        pre_gain  = echo_mix * echo_on * echo_pre_fdn;
+        post_gain = echo_mix * echo_on * (1 - echo_pre_fdn);
+
+        // Pre-FDN injection: blend echo before diffusers (echo repeats get reverb)
+        pre_fdn_L = xfade(pre_gain, pdL, pdL + echoL);
+        pre_fdn_R = xfade(pre_gain, pdR, pdR + echoR);
+
+        // FDN path
+        fdn_stereo = (pre_fdn_L, pre_fdn_R) : diffuser_L, diffuser_R : fdn_tank;
+        fdnL = fdn_stereo : _, !;
+        fdnR = fdn_stereo : !, _;
+
+        // Post-FDN injection: blend echo after FDN (reverb tail gets echoed)
+        post_fdn_L = xfade(post_gain, fdnL, fdnL + echoL);
+        post_fdn_R = xfade(post_gain, fdnR, fdnR + echoR);
+    };
+
     interleave_mix(wL, wR, dL, dR) = xfade(mix, dL, wL), xfade(mix, dR, wR);
 };

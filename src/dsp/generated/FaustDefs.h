@@ -8,9 +8,6 @@
 #define FAUSTFLOAT float
 #endif
 
-// Forward declarations for types referenced by buildUserInterface() and metadata().
-// We never call these methods -- the bridge writes to Faust zones directly --
-// but the generated code declares them, so the types must exist.
 struct UI {
     virtual ~UI() = default;
     virtual void openTabBox(const char*) {}

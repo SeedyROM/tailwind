@@ -7,14 +7,11 @@ Reads Faust JSON metadata and generates:
   - FaustBridge.h  (bridge class: APVTS <-> Faust DSP zones)
 
 Also invokes the Faust compiler to generate FaustDSP.h.
-
-Usage:
-    python3 codegen.py <path/to/file.dsp> --output <output_dir>
-    python3 codegen.py dsp/tailwind_reverb.dsp --output src/dsp/generated
 """
 
 import argparse
 import json
+import math
 import os
 import re
 import subprocess
@@ -22,13 +19,7 @@ import subprocess
 from typing import Any
 
 
-# ---------------------------------------------------------------------------
-# Label -> C++ identifier conversion
-# ---------------------------------------------------------------------------
-
-
 def label_to_param_id(label: str) -> str:
-    """Convert a Faust label like 'Pre-Delay (ms)' to a param ID like 'pre_delay_ms'."""
     s = label.lower()
     s = re.sub(r"[^a-z0-9]+", "_", s)
     s = s.strip("_")
@@ -36,20 +27,17 @@ def label_to_param_id(label: str) -> str:
 
 
 def label_to_camel(label: str) -> str:
-    """Convert a Faust label like 'Pre-Delay (ms)' to camelCase like 'preDelayMs'."""
     snake = label_to_param_id(label)
     parts = snake.split("_")
     return parts[0] + "".join(p.capitalize() for p in parts[1:])
 
 
 def label_to_pascal(label: str) -> str:
-    """Convert a Faust label like 'Pre-Delay (ms)' to PascalCase like 'PreDelayMs'."""
     snake = label_to_param_id(label)
     return "".join(p.capitalize() for p in snake.split("_"))
 
 
 def get_meta_value(param: dict[str, Any], key: str) -> str | None:
-    """Return the first Faust metadata value for a key, if present."""
     for meta_entry in param.get("meta", []):
         if key in meta_entry:
             return str(meta_entry[key])
@@ -57,7 +45,6 @@ def get_meta_value(param: dict[str, Any], key: str) -> str | None:
 
 
 def get_param_id(param: dict[str, Any]) -> str:
-    """Return the stable parameter ID, preferring explicit Faust metadata."""
     explicit_id = get_meta_value(param, "id")
     if explicit_id:
         return label_to_param_id(explicit_id)
@@ -65,22 +52,14 @@ def get_param_id(param: dict[str, Any]) -> str:
 
 
 def param_id_to_camel(param_id: str) -> str:
-    """Convert a stable parameter ID to a camelCase C++ symbol."""
     return label_to_camel(param_id)
 
 
 def param_id_to_pascal(param_id: str) -> str:
-    """Convert a stable parameter ID to a PascalCase C++ symbol."""
     return label_to_pascal(param_id)
 
 
-# ---------------------------------------------------------------------------
-# JSON traversal: flatten nested UI groups into a flat param list
-# ---------------------------------------------------------------------------
-
-
 def extract_params(ui_items: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Recursively extract all active UI widgets from the Faust JSON UI tree."""
     params = []
     for item in ui_items:
         item_type = item.get("type", "")
@@ -91,8 +70,18 @@ def extract_params(ui_items: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return params
 
 
+def extract_bargraphs(ui_items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    bargraphs = []
+    for item in ui_items:
+        item_type = item.get("type", "")
+        if item_type in ("vgroup", "hgroup", "tgroup"):
+            bargraphs.extend(extract_bargraphs(item.get("items", [])))
+        elif item_type in ("hbargraph", "vbargraph"):
+            bargraphs.append(item)
+    return bargraphs
+
+
 def get_sort_key(param: dict[str, Any]) -> int:
-    """Extract the numeric ordering key from metadata (e.g. '1', '2')."""
     for meta_entry in param.get("meta", []):
         for key in meta_entry:
             if key.isdigit():
@@ -100,32 +89,9 @@ def get_sort_key(param: dict[str, Any]) -> int:
     return 99
 
 
-# ---------------------------------------------------------------------------
-# Faust compiler invocation
-# ---------------------------------------------------------------------------
-
-
 def run_faust_cpp(
     dsp_path: str, output_path: str, class_name: str = "TailwindDSP"
 ) -> None:
-    """Run faust to generate the C++ DSP class.
-
-    Uses -scn "" to remove the dsp base class dependency, making the output
-    self-contained (no Faust SDK headers needed to build).
-
-    Optimization flags:
-      -vec       : enable auto-vectorization (inner loops use vector size)
-      -vs 32     : vector size = 32 samples (good balance for NEON/AVX2)
-      -lv 1      : loop variant 1 (simple vector loop, best for compiler auto-vec)
-      -ftz 0     : flush-to-zero OFF in generated code (handled by JUCE
-                   ScopedNoDenormals + compiler -fdenormal-fp-math flag instead;
-                   -ftz 2 has a known Clang rvalue-address bug with -vec)
-      -mcd 0     : disable max copy delay optimization (better for vectorized code)
-      -single    : single precision (float)
-
-    Post-processes the output to inject #include "FaustDefs.h" so UI/Meta stubs
-    are available.
-    """
     cmd = [
         "faust",
         "-lang",
@@ -152,11 +118,9 @@ def run_faust_cpp(
     print(f"  Running: {' '.join(cmd)}")
     subprocess.run(cmd, check=True)
 
-    # Post-process the generated C++ source
     with open(output_path, "r") as f:
         content = f.read()
 
-    # 1. Inject FaustDefs.h include after the header guard
     guard_pattern = f"#define  __{class_name}_H__"
     if guard_pattern in content:
         content = content.replace(
@@ -164,16 +128,19 @@ def run_faust_cpp(
             f'{guard_pattern}\n\n#include "FaustDefs.h"',
         )
     else:
-        # Fallback: insert after first #define that looks like a header guard
         content = content.replace(
             "#endif \n\n/* link with",
             '#include "FaustDefs.h"\n\n#endif \n\n/* link with',
         )
 
-    # 2. Silence -Wunused-parameter on Faust SIG helper methods.
-    #    These have `int sample_rate` parameters that Faust never reads.
     content = re.sub(
         r"(void instanceInit\w+SIG\d+\(int sample_rate\) \{)",
+        r"\1\n\t\t(void)sample_rate;",
+        content,
+    )
+
+    content = re.sub(
+        r"(static void classInit\(int sample_rate\) \{)",
         r"\1\n\t\t(void)sample_rate;",
         content,
     )
@@ -183,13 +150,28 @@ def run_faust_cpp(
 
 
 def run_faust_json(dsp_path: str, output_dir: str) -> str:
-    """Run faust -json to generate JSON metadata.
-
-    Faust always writes <input>.json next to the source file, so we move
-    it into the output directory afterwards to keep the source tree clean.
-    Returns the final JSON file path.
-    """
-    cmd = ["faust", "-json", "-o", "/dev/null", dsp_path]
+    # IMPORTANT: the flags here must match run_faust_cpp() exactly so that
+    # the varname fields (fVslider0, fVslider1, ...) in the JSON correspond
+    # to the same variables in the generated C++ DSP.  Different compilation
+    # options (especially -vec, -mcd) cause Faust to assign variable names
+    # in a different order.
+    cmd = [
+        "faust",
+        "-json",
+        "-vec",
+        "-vs",
+        "32",
+        "-lv",
+        "1",
+        "-ftz",
+        "0",
+        "-mcd",
+        "0",
+        "-single",
+        "-o",
+        "/dev/null",
+        dsp_path,
+    ]
     print(f"  Running: {' '.join(cmd)}")
     subprocess.run(cmd, check=True)
 
@@ -202,10 +184,6 @@ def run_faust_json(dsp_path: str, output_dir: str) -> str:
     return dst_json
 
 
-# ---------------------------------------------------------------------------
-# Code generation: FaustDefs.h  (minimal stubs so FaustDSP.h compiles standalone)
-# ---------------------------------------------------------------------------
-
 FAUST_DEFS_HEADER = """\
 // ==========================================================================
 // AUTO-GENERATED by codegen.py -- do not edit manually.
@@ -217,9 +195,6 @@ FAUST_DEFS_HEADER = """\
 #define FAUSTFLOAT float
 #endif
 
-// Forward declarations for types referenced by buildUserInterface() and metadata().
-// We never call these methods -- the bridge writes to Faust zones directly --
-// but the generated code declares them, so the types must exist.
 struct UI {
     virtual ~UI() = default;
     virtual void openTabBox(const char*) {}
@@ -245,33 +220,21 @@ struct Meta {
 
 
 def generate_faust_defs_h() -> str:
-    """Generate FaustDefs.h content."""
     return FAUST_DEFS_HEADER
 
-
-# ---------------------------------------------------------------------------
-# Code generation: FaustParams.h
-# ---------------------------------------------------------------------------
 
 PARAMS_HEADER = """\
 // ==========================================================================
 // AUTO-GENERATED by codegen.py from {dsp_name} -- do not edit manually.
-// Regenerate by modifying the .dsp file and rebuilding.
 // ==========================================================================
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
 
-// --------------------------------------------------------------------------
-// Parameter IDs (string constants for APVTS keys)
-// --------------------------------------------------------------------------
 namespace FaustParamIDs {{
 {param_id_constants}
 }} // namespace FaustParamIDs
 
-// --------------------------------------------------------------------------
-// Parameter Layout (creates the full APVTS ParameterLayout)
-// --------------------------------------------------------------------------
 namespace FaustParams {{
 
 inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
@@ -287,15 +250,12 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
 
 
 def generate_params_h(params: list[dict[str, Any]], dsp_name: str) -> str:
-    """Generate FaustParams.h content."""
-    # Param ID constants
     id_lines = []
     for p in params:
         pid = get_param_id(p)
         camel = param_id_to_camel(pid)
         id_lines.append(f'    static constexpr const char* {camel} = "{pid}";')
 
-    # Param layout entries
     layout_lines = []
     for p in params:
         pid = get_param_id(p)
@@ -303,22 +263,44 @@ def generate_params_h(params: list[dict[str, Any]], dsp_name: str) -> str:
         ptype = p["type"]
 
         if ptype == "checkbox" or ptype == "button":
+            # Check for [default:1] metadata to set initial state
+            default_val = "false"
+            for meta_entry in p.get("meta", []):
+                if "default" in meta_entry and str(meta_entry["default"]) == "1":
+                    default_val = "true"
             layout_lines.append(
                 f"    params.push_back(std::make_unique<juce::AudioParameterBool>(\n"
                 f"        juce::ParameterID{{FaustParamIDs::{camel}, 1}},\n"
                 f'        "{p["label"]}",\n'
-                f"        false));"
+                f"        {default_val}));"
             )
         else:
             init_val = float(p.get("init", 0))
             min_val = float(p.get("min", 0))
             max_val = float(p.get("max", 1))
             step_val = float(p.get("step", 0.01))
+            scale = get_meta_value(p, "scale")
+            if scale == "log" and max_val > min_val:
+                # Compute skew factor that centres the knob on the geometric mean.
+                # JUCE formula: skew = log(0.5) / log((centre - min) / (max - min))
+                centre = math.sqrt(min_val * max_val)
+                skew = math.log(0.5) / math.log(
+                    (centre - min_val) / (max_val - min_val)
+                )
+                range_str = (
+                    f"juce::NormalisableRange<float>"
+                    f"({min_val}f, {max_val}f, {step_val}f, {skew:.4f}f)"
+                )
+            else:
+                range_str = (
+                    f"juce::NormalisableRange<float>"
+                    f"({min_val}f, {max_val}f, {step_val}f)"
+                )
             layout_lines.append(
                 f"    params.push_back(std::make_unique<juce::AudioParameterFloat>(\n"
                 f"        juce::ParameterID{{FaustParamIDs::{camel}, 1}},\n"
                 f'        "{p["label"]}",\n'
-                f"        juce::NormalisableRange<float>({min_val}f, {max_val}f, {step_val}f),\n"
+                f"        {range_str},\n"
                 f"        {init_val}f));"
             )
 
@@ -329,14 +311,9 @@ def generate_params_h(params: list[dict[str, Any]], dsp_name: str) -> str:
     )
 
 
-# ---------------------------------------------------------------------------
-# Code generation: FaustBridge.h
-# ---------------------------------------------------------------------------
-
 BRIDGE_HEADER = """\
 // ==========================================================================
 // AUTO-GENERATED by codegen.py from {dsp_name} -- do not edit manually.
-// Regenerate by modifying the .dsp file and rebuilding.
 // ==========================================================================
 #pragma once
 
@@ -355,19 +332,16 @@ public:
 {cached_param_init_lines}
     }}
 
-    /// Call from prepareToPlay
     void prepare(double sampleRate, int samplesPerBlock)
     {{
         dsp_.init(static_cast<int>(sampleRate));
         resizeScratchBuffers(samplesPerBlock);
     }}
 
-    /// Call from processBlock -- syncs APVTS values to Faust zones, then computes
     void process(juce::AudioBuffer<float>& buffer, int numInputChannels, int numOutputChannels)
     {{
         const int numSamples = buffer.getNumSamples();
 
-        // Sync APVTS -> Faust parameter zones (once per block)
 {sync_lines}
 
         float* inputChannels[{num_inputs}];
@@ -407,13 +381,9 @@ public:
         }}
     }}
 
-    /// Access the underlying Faust DSP instance (for advanced use)
     {class_name}& getDSP() {{ return dsp_; }}
     const {class_name}& getDSP() const {{ return dsp_; }}
 
-    // ----------------------------------------------------------------------
-    // Named getters (read current APVTS values)
-    // ----------------------------------------------------------------------
 {getter_methods}
 
 private:
@@ -442,20 +412,19 @@ private:
 
 def generate_bridge_h(
     params: list[dict[str, Any]],
+    bargraphs: list[dict[str, Any]],
     dsp_name: str,
     class_name: str = "TailwindDSP",
     num_inputs: int = 2,
     num_outputs: int = 2,
 ) -> str:
-    """Generate FaustBridge.h content."""
-    # Sync lines: APVTS -> Faust zone
     sync_lines = []
     cached_param_init_lines = []
     cached_param_ptr_lines = []
     for p in params:
         pid = get_param_id(p)
         camel = param_id_to_camel(pid)
-        varname = p["varname"]  # e.g. "fHslider0", "fCheckbox0"
+        varname = p["varname"]
         ptype = p["type"]
         cached_name = f"{camel}Param_"
 
@@ -473,7 +442,6 @@ def generate_bridge_h(
                 f"        dsp_.{varname} = loadParam({cached_name});"
             )
 
-    # Getter methods
     getter_lines = []
     for p in params:
         pid = get_param_id(p)
@@ -490,6 +458,38 @@ def generate_bridge_h(
                 f"    float get{pascal}() const {{ return loadParam({camel}Param_); }}"
             )
 
+    # Deduplicate bargraphs with the same id (e.g. stereo GR meters).
+    # When duplicates exist, generate per-channel getters (L/R) plus a
+    # combined getter that returns the min (most-compressed) value.
+    seen_bargraph_ids: dict[str, list[dict[str, Any]]] = {}
+    for b in bargraphs:
+        bid = get_param_id(b)
+        seen_bargraph_ids.setdefault(bid, []).append(b)
+
+    for bid, bg_list in seen_bargraph_ids.items():
+        pascal = param_id_to_pascal(bid)
+        if len(bg_list) == 1:
+            varname = bg_list[0]["varname"]
+            getter_lines.append(
+                f"    float get{pascal}() const {{ return dsp_.{varname}; }}"
+            )
+        else:
+            # Per-channel getters (L, R, ...)
+            suffixes = ["L", "R", "C", "Ls", "Rs", "Lfe"]  # extend if > stereo
+            varnames = []
+            for i, b in enumerate(bg_list):
+                suffix = suffixes[i] if i < len(suffixes) else str(i)
+                varname = b["varname"]
+                varnames.append(varname)
+                getter_lines.append(
+                    f"    float get{pascal}{suffix}() const {{ return dsp_.{varname}; }}"
+                )
+            # Combined getter: min of all channels (most gain reduction)
+            min_expr = ", ".join(f"dsp_.{v}" for v in varnames)
+            getter_lines.append(
+                f"    float get{pascal}() const {{ return juce::jmin({min_expr}); }}"
+            )
+
     return BRIDGE_HEADER.format(
         dsp_name=dsp_name,
         class_name=class_name,
@@ -500,11 +500,6 @@ def generate_bridge_h(
         sync_lines="\n".join(sync_lines),
         getter_methods="\n".join(getter_lines),
     )
-
-
-# ---------------------------------------------------------------------------
-# Main
-# ---------------------------------------------------------------------------
 
 
 def main():
@@ -518,7 +513,7 @@ def main():
     parser.add_argument(
         "--class-name",
         default="TailwindDSP",
-        help="C++ class name for the Faust DSP (default: TailwindDSP)",
+        help="C++ class name for the Faust DSP",
     )
     parser.add_argument(
         "--skip-faust",
@@ -534,7 +529,6 @@ def main():
 
     os.makedirs(output_dir, exist_ok=True)
 
-    # Step 1: Run Faust compiler
     faust_dsp_h = os.path.join(output_dir, "FaustDSP.h")
     if not args.skip_faust:
         print("[codegen] Running Faust compiler...")
@@ -546,7 +540,6 @@ def main():
         json_path = os.path.join(output_dir, os.path.basename(dsp_path) + ".json")
         print(f"[codegen] Skipping Faust compiler, reading existing {json_path}")
 
-    # Step 2: Parse JSON
     print(f"[codegen] Reading {json_path}...")
     with open(json_path, "r") as f:
         faust_json = json.load(f)
@@ -554,37 +547,31 @@ def main():
     ui_tree = faust_json.get("ui", [])
     params = extract_params(ui_tree)
     params.sort(key=get_sort_key)
+    bargraphs = extract_bargraphs(ui_tree)
+    bargraphs.sort(key=get_sort_key)
 
     num_inputs = faust_json.get("inputs", 2)
     num_outputs = faust_json.get("outputs", 2)
 
     print(
-        f"[codegen] Found {len(params)} parameters, {num_inputs} inputs, {num_outputs} outputs"
+        f"[codegen] Found {len(params)} parameters, {len(bargraphs)} bargraphs, "
+        f"{num_inputs} inputs, {num_outputs} outputs"
     )
-    for p in params:
-        pid = get_param_id(p)
-        print(f"  [{get_sort_key(p)}] {p['label']:20s} -> {pid:20s} ({p['varname']})")
 
-    # Step 3: Generate FaustDefs.h (minimal stubs for Faust types)
     defs_h = generate_faust_defs_h()
     defs_path = os.path.join(output_dir, "FaustDefs.h")
     with open(defs_path, "w") as f:
         f.write(defs_h)
-    print(f"[codegen] Wrote {defs_path}")
 
-    # Step 4: Generate FaustParams.h
     params_h = generate_params_h(params, dsp_name)
     params_path = os.path.join(output_dir, "FaustParams.h")
     with open(params_path, "w") as f:
         f.write(params_h)
-    print(f"[codegen] Wrote {params_path}")
 
-    # Step 5: Generate FaustBridge.h
-    bridge_h = generate_bridge_h(params, dsp_name, class_name, num_inputs, num_outputs)
+    bridge_h = generate_bridge_h(params, bargraphs, dsp_name, class_name, num_inputs, num_outputs)
     bridge_path = os.path.join(output_dir, "FaustBridge.h")
     with open(bridge_path, "w") as f:
         f.write(bridge_h)
-    print(f"[codegen] Wrote {bridge_path}")
 
     print("[codegen] Done.")
 

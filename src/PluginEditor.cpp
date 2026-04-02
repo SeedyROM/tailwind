@@ -25,7 +25,12 @@ TailwindAudioProcessorEditor::TailwindAudioProcessorEditor(TailwindAudioProcesso
       freezeOnBtn(p.apvts, FaustParamIDs::freezeOn),
       // GAIN STAGING
       inputGainKnob(p.apvts, FaustParamIDs::inputGainDb, "INPUT", " dB"),
-      outputGainKnob(p.apvts, FaustParamIDs::outputGainDb, "OUTPUT", " dB") {
+      outputGainKnob(p.apvts, FaustParamIDs::outputGainDb, "OUTPUT", " dB"),
+      // ECHO
+      echoTimeKnob(p.apvts, FaustParamIDs::echoTimeMs, "TIME", " ms"),
+      echoFeedbackKnob(p.apvts, FaustParamIDs::echoFeedback, "FEEDBACK", " %", true),
+      echoColorKnob(p.apvts, FaustParamIDs::echoColor, "COLOR", " %", true),
+      echoMixKnob(p.apvts, FaustParamIDs::echoMix, "MIX", " %", true) {
 
   // Apply custom look and feel
   setLookAndFeel(&tailwindLnf);
@@ -78,8 +83,40 @@ TailwindAudioProcessorEditor::TailwindAudioProcessorEditor(TailwindAudioProcesso
   inputGainKnob.setMeterSource([&p] { return p.getInputMeterPeak(); });
   outputGainKnob.setMeterSource([&p] { return p.getOutputMeterPeak(); });
 
+  // Echo section
+  addAndMakeVisible(echoOnBtn);
+  addAndMakeVisible(echoPreFdnBtn);
+  addAndMakeVisible(echoTimeKnob);
+  addAndMakeVisible(echoFeedbackKnob);
+  addAndMakeVisible(echoColorKnob);
+  addAndMakeVisible(echoMixKnob);
+
+  echoPreFdnBtn.setClickingTogglesState(true);
+  echoPreFdnBtn.setColour(juce::TextButton::buttonColourId,
+                          juce::Colour(TailwindColors::panelBorder));
+  echoPreFdnBtn.setColour(juce::TextButton::buttonOnColourId,
+                          juce::Colour(TailwindColors::accentWarm));
+  echoPreFdnBtn.setColour(juce::TextButton::textColourOffId,
+                          juce::Colour(TailwindColors::sectionTitle));
+  echoPreFdnBtn.setColour(juce::TextButton::textColourOnId,
+                          juce::Colour(TailwindColors::labelText));
+
+  echoOnAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(
+      p.apvts, FaustParamIDs::echoOn, echoOnBtn.getToggle());
+  echoPreFdnAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(
+      p.apvts, FaustParamIDs::echoPreFdn, echoPreFdnBtn);
+
+  echoOnBtn.setOnClick([this] { updateEchoSectionState(); });
+  echoPreFdnBtn.onClick = [this] {
+    echoPreFdnBtn.setButtonText(echoPreFdnBtn.getToggleState() ? "PRE" : "POST");
+  };
+
+  // Apply initial states (attachments set toggle states from params above)
+  updateEchoSectionState();
+  echoPreFdnBtn.setButtonText(echoPreFdnBtn.getToggleState() ? "PRE" : "POST");
+
   setResizable(true, true);
-  setResizeLimits(minEditorWidth, minEditorHeight, 1072, 644);
+  setResizeLimits(minEditorWidth, minEditorHeight, 1072, 740);
   setSize(minEditorWidth, minEditorHeight);
 
   startTimerHz(24);
@@ -158,21 +195,26 @@ void TailwindAudioProcessorEditor::showOptionsMenu() {
       });
 }
 
+void TailwindAudioProcessorEditor::updateEchoSectionState() {
+  const bool isOn = echoOnBtn.getToggle().getToggleState();
+  const float alpha = isOn ? 1.0f : 0.35f;
+  echoTimeKnob.setEnabled(isOn);
+  echoFeedbackKnob.setEnabled(isOn);
+  echoColorKnob.setEnabled(isOn);
+  echoMixKnob.setEnabled(isOn);
+  echoPreFdnBtn.setEnabled(isOn);
+  echoTimeKnob.setAlpha(alpha);
+  echoFeedbackKnob.setAlpha(alpha);
+  echoColorKnob.setAlpha(alpha);
+  echoMixKnob.setAlpha(alpha);
+  echoPreFdnBtn.setAlpha(alpha);
+}
+
 void TailwindAudioProcessorEditor::paint(juce::Graphics& g) {
   // Main background
   g.fillAll(juce::Colour(TailwindColors::background));
 
-  // Compute section bounds (same as resized) for painting panels
-  auto bounds = getLocalBounds();
-  bounds.removeFromTop(50); // topBar
-  bounds.reduce(12, 12);
-
-  const int topRowHeight = juce::jlimit(280, 420, (bounds.getHeight() * 2) / 3);
-  const int bottomRowHeight = bounds.getHeight() - topRowHeight - 8;
-
-  auto topRow = bounds.removeFromTop(topRowHeight);
-  bounds.removeFromTop(8); // gap
-  auto bottomRow = bounds.removeFromTop(bottomRowHeight);
+  auto [topRow, bottomRow, echoRow] = computeRowLayout();
 
   // Top row: MAIN (4 knobs), TONE (4 knobs), MODULATION (2 knobs)
   const int sectionGap = 8;
@@ -184,10 +226,10 @@ void TailwindAudioProcessorEditor::paint(juce::Graphics& g) {
   topRow.removeFromLeft(sectionGap);
   auto modBounds = topRow;
 
-  // Draw section panels
   drawSectionPanel(g, mainBounds, "MAIN");
   drawSectionPanel(g, toneBounds, "TONE");
   drawSectionPanel(g, modBounds, "MODULATION");
+
   const int lowerGap = 8;
   const int characterWidth = (bottomRow.getWidth() - lowerGap) * 3 / 5;
   auto characterBounds = bottomRow.removeFromLeft(characterWidth);
@@ -196,6 +238,7 @@ void TailwindAudioProcessorEditor::paint(juce::Graphics& g) {
 
   drawSectionPanel(g, characterBounds, "CHARACTER");
   drawSectionPanel(g, gainBounds, "GAIN STAGING");
+  drawSectionPanel(g, echoRow, "ECHO");
 }
 
 void TailwindAudioProcessorEditor::resized() {
@@ -204,15 +247,7 @@ void TailwindAudioProcessorEditor::resized() {
   // Top bar
   topBar.setBounds(bounds.removeFromTop(50));
 
-  // Content area with padding
-  bounds.reduce(12, 12);
-
-  const int topRowHeight = juce::jlimit(280, 420, (bounds.getHeight() * 2) / 3);
-  const int bottomRowHeight = bounds.getHeight() - topRowHeight - 8;
-
-  auto topRow = bounds.removeFromTop(topRowHeight);
-  bounds.removeFromTop(8); // gap between rows
-  auto bottomRow = bounds.removeFromTop(bottomRowHeight);
+  auto [topRow, bottomRow, echoRow] = computeRowLayout();
 
   // ---- Top row section widths ----
   const int sectionGap = 8;
@@ -335,6 +370,43 @@ void TailwindAudioProcessorEditor::resized() {
     inputGainKnob.setBounds(area.removeFromLeft(knobW));
     area.removeFromLeft(hGap);
     outputGainKnob.setBounds(area);
+  }
+
+  // ---- ECHO section (single row: 4 knobs + power button + pre/post toggle) ----
+  {
+    const int sectionPad = 8;
+    const int titleH = 24;
+    const int btnSize = 14;
+    const int prePostW = 36;
+    const int prePostH = 16;
+
+    // Power button: top-right of title bar
+    echoOnBtn.setBounds(echoRow.getRight() - sectionPad - btnSize,
+                        echoRow.getY() + (titleH - btnSize) / 2 + 2,
+                        btnSize,
+                        btnSize);
+
+    // PRE/POST toggle: immediately left of the power button
+    echoPreFdnBtn.setBounds(echoRow.getRight() - sectionPad - btnSize - 12 - prePostW,
+                            echoRow.getY() + (titleH - prePostH) / 2 + 2,
+                            prePostW,
+                            prePostH);
+
+    auto area = echoRow.reduced(sectionPad);
+    area.removeFromTop(titleH);
+
+    // 4 knobs evenly distributed across the full row width
+    const int numKnobs = 4;
+    const int hGap = 8;
+    const int knobW = (area.getWidth() - hGap * (numKnobs - 1)) / numKnobs;
+
+    echoTimeKnob.setBounds(area.removeFromLeft(knobW));
+    area.removeFromLeft(hGap);
+    echoFeedbackKnob.setBounds(area.removeFromLeft(knobW));
+    area.removeFromLeft(hGap);
+    echoColorKnob.setBounds(area.removeFromLeft(knobW));
+    area.removeFromLeft(hGap);
+    echoMixKnob.setBounds(area);
   }
 }
 
